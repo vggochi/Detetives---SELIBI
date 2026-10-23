@@ -1,131 +1,1504 @@
-(function(){"use strict";
-var $=function(id){return document.getElementById(id);};
-var T={of:["Site oficial",1],un:["Universidade",1],ci:["Instituição científica",1],bd:["Base de dados pública",1],im:["Imprensa",0],rd:["Rede social ou blog",0]};
-var M={a:"Apoia",c:"Contradiz",i:"Incompleta",d:"Descartar"};
-var V={v:"Verdadeira",f:"Falsa",i:"Inconclusiva"};
-var C=[
-{t:"A cidade das ciclovias",lv:"Fácil",a:"v",
-q:"A prefeitura de Vila Nova do Sul dobrou a malha cicloviária da cidade: de 42 km em 2020 para 84 km em 2025.",
-ctx:"Um cartaz da campanha municipal usa esse número. Sua equipe precisa descobrir se ele se sustenta.",
-res:"Duas fontes independentes (prefeitura e universidade) concordam, com metodologia aberta. As outras duas pistas não trazem prova alguma.",
-p:[["of","Prefeitura de Vila Nova do Sul","14/03/2026","Relatório de Gestão 2025, p. 31: a malha cicloviária passou de 42 km (2020) para 84 km (dez/2025), conforme levantamento da Secretaria de Mobilidade.","a","Fonte primária do dado, com data e autoria. Mas é a própria prefeitura, então precisa de confirmação externa."],
-["un","Observatório de Mobilidade, Univ. Federal do Vale","02/02/2026","Medição independente por GPS: 41,8 km de ciclovias e ciclofaixas em 2020 e 83,6 km em dez/2025. Metodologia e planilha abertas.","a","Fonte independente com método aberto; os números batem com o oficial."],
-["rd","Perfil @cidadeemmovimento","10/04/2026","A prefeitura mente! Só tem uns 30 km de ciclovia, eu mesmo andei por tudo. Compartilha!","d","Relato pessoal, sem medição, sem fonte e sem autoria identificável."],
-["rd","Blog Viaje Mais","21/01/2026","Top 10 cidades pedaláveis: Vila Nova do Sul tem mais de 120 km de ciclovias! (sem metodologia)","d","Número sem método nem fonte, muito diferente dos demais: descartar."]]},
-{t:"O chá milagroso",lv:"Fácil",a:"f",
-q:"Um estudo da Universidade Federal do Planalto provou que o chá de erva-doce cura a gripe em 24 horas.",
-ctx:"A mensagem chegou em três grupos de família, com pedido de repasse.",
-res:"A universidade negou o estudo e a instituição científica não encontra evidência de cura. Quem sustenta a afirmação são uma corrente e um site que vende chá.",
-p:[["rd","Corrente de WhatsApp","sem data","URGENTE! Estudo da UFP PROVA que erva-doce cura gripe em 1 dia. Os médicos não querem que você saiba. Repasse!","d","Sem link, autor ou data, com urgência e apelo emocional: sinais típicos de corrente."],
-["un","Universidade Federal do Planalto (nota oficial)","05/05/2025","A UFP não realizou nem publicou estudo sobre chá de erva-doce e gripe. A mensagem circula sem autorização e usa indevidamente o nome da universidade.","c","A instituição citada nega a autoria: contradiz diretamente a afirmação."],
-["ci","Instituto Nacional de Pesquisa Clínica","18/06/2025","Não há evidência de que qualquer chá cure a gripe. O quadro costuma durar de 3 a 7 dias, e o tratamento é de suporte.","c","Fonte científica sem interesse comercial; a promessa de cura em 24 h não tem base."],
-["rd","Blog Vida Natural Chás","12/05/2025","Estudo comprova: erva-doce cura gripe! Compre agora o kit com 10 caixas.","d","Quem vende o produto tem interesse, e o 'estudo' não é citado nem linkado."]]},
-{t:"A escola que mais cresceu",lv:"Difícil",a:"i",
-q:"A Escola Municipal Aurora foi a que mais cresceu em leitura em todo o estado entre 2023 e 2025.",
-ctx:"A diretora repetiu a frase em entrevista. Será que dá para comprovar?",
-res:"A Aurora lidera entre os dados já divulgados, mas 40% das escolas ficaram de fora. Sem a base completa, não dá para confirmar nem negar 'em todo o estado'.",
-p:[["of","Secretaria Municipal de Educação","20/02/2026","Boletim 2025: a Escola Aurora subiu 18 pontos na prova de leitura, um dos maiores avanços da região Norte do estado.","i","Confirma o avanço, mas só fala da região Norte, não do estado inteiro."],
-["bd","Painel de Avaliação Estadual","30/03/2026","Entre as escolas com dados divulgados (60% do total), a Aurora tem o maior avanço: +18 pontos. Os dados dos 40% restantes ainda não foram publicados.","a","Apoia, mas só entre as escolas já divulgadas: é prova parcial."],
-["im","Jornal Correio do Norte","03/04/2026","Aurora é campeã de crescimento no estado, diz diretora. A reportagem não cita números nem documentos.","d","Repete a frase da diretora sem checar nenhum dado."],
-["of","Secretaria Estadual de Educação","15/04/2026","Os resultados das escolas rurais e de ensino integral só serão divulgados em dezembro de 2026. Ainda não é possível comparar todas as escolas.","i","A informação que falta é justamente a que decidiria o caso."]]},
-{t:"O desemprego pela metade",lv:"Médio",a:"f",
-q:"O desemprego no país caiu pela metade em apenas um ano.",
-ctx:"Um gráfico com essa manchete circula nas redes. Ele não mostra a fonte.",
-res:"Em um ano a queda foi de 1,4 ponto percentual (cerca de 17%). O 'meio' vem de misturar períodos diferentes: um clássico dado fora de contexto.",
-p:[["rd","Print de gráfico compartilhado","sem data","Desemprego: 12% → 6%. 'Caiu 50%!' (imagem cortada, sem fonte e sem datas no eixo)","d","Imagem cortada, sem fonte e sem datas: não dá para verificar."],
-["bd","Instituto Nacional de Estatística, painel de desocupação","28/04/2026","Taxa de desocupação: 8,4% no 1º trimestre de 2025 e 7,0% no 1º trimestre de 2026.","c","Dado primário: a queda em um ano foi de 1,4 ponto percentual, cerca de 17%, e não 50%."],
-["of","Ministério do Trabalho (nota técnica)","05/05/2026","A queda de 1,4 ponto percentual é a maior em quatro anos. Não é correto comparar com o pico de 12% de 2017 como se fosse variação de um ano.","c","Confirma o dado do instituto e alerta contra a comparação enganosa."],
-["un","Núcleo de Economia, Universidade Estadual","12/05/2026","Do pico de 12% (2017) até 7,0% (2026) a taxa caiu cerca de 42%, mas ao longo de nove anos, não de um.","i","Explica de onde o número exagerado pode ter vindo, mas não sustenta 'em um ano'."]]},
-{t:"Espelhos na montanha",lv:"Médio",a:"v",
-q:"A vila de Serra Funda instalou espelhos gigantes na encosta para levar sol à praça central nos meses de inverno.",
-ctx:"Soa como piada, e o post que trouxe a notícia tem cara de meme. Mas pode ser verdade.",
-res:"Parece absurdo, mas fonte oficial, reportagem com provas e relatório científico concordam. O exagero do meme não invalida o fato.",
-p:[["of","Prefeitura de Serra Funda","09/10/2019","Projeto Espelhos do Vale: três espelhos de 17 m² na encosta, movidos por computador, refletem a luz do sol sobre a praça central nos meses de inverno, quando o sol não alcança o fundo do vale.","a","Fonte primária, com data e detalhes técnicos."],
-["im","Gazeta da Serra","11/10/2019","Reportagem com fotos da praça iluminada e entrevista com a engenheira responsável, que cita o relatório técnico do projeto.","a","Imprensa que traz provas próprias (fotos, entrevista) e cita o documento original."],
-["ci","Instituto de Energia Solar","03/2020","Relatório de avaliação: os espelhos iluminam cerca de 600 m² da praça, e o sistema acompanha o sol por computador.","a","Instituição científica independente, que mediu o resultado."],
-["rd","Página de memes Mundo Incrível","2024","Cidade usa espelhos para iluminar a CIDADE INTEIRA o ano todo!!!","d","Exagera (praça, não cidade; só no inverno) e não cita fonte: não serve de prova."]]}
-];
-var S=[],cur=0;
-function reset(i){S[i]={m:{},v:"",j:"",r:null};}
-C.forEach(function(c,i){reset(i);});
-function el(t,c,x){var e=document.createElement(t);if(c){e.className=c;}if(x!=null){e.textContent=x;}return e;}
-function score(i){
-  var c=C[i],s=S[i],n=c.p.length,ok=0,ev=0,evn=0,cite={},w=(s.j.match(/\S+/g)||[]).length;
-  c.p.forEach(function(p,j){var m=s.m[j];if(m&&(m==="d")===(p[4]==="d")){ok++;}if(p[4]!=="d"){evn++;if(m===p[4]){ev++;}}});
-  (s.j.match(/\bP[1-4]\b/gi)||[]).forEach(function(x){cite[x.toUpperCase()]=1;});
-  var r={pr:s.v===c.a?25:(s.v==="i"?8:0),fo:Math.round(ok/n*25),ev:Math.round(ev/evn*25),
-    cl:Math.round(Math.min(w/35,1)*15+Math.min(Object.keys(cite).length,2)*5)};
-  r.t=r.pr+r.fo+r.ev+r.cl;return r;
-}
-function submit(){
-  var s=S[cur],miss=[],msg=[];
-  C[cur].p.forEach(function(p,j){if(!s.m[j]){miss.push("P"+(j+1));}});
-  if(miss.length){msg.push("classifique "+miss.join(", "));}
-  if(!s.v){msg.push("escolha um veredito");}
-  if(!s.j.trim()){msg.push("escreva a justificativa");}
-  if(msg.length){$("st").textContent="Falta: "+msg.join("; ")+".";return;}
-  s.r=score(cur);render();
-  var rs=$("res");rs.scrollIntoView({block:"start"});rs.focus({preventScroll:true});
-}
-function radio(name,id,label,checked,lock,cls,fn){
-  var o=el("span","opt"+(cls?" "+cls:"")),ip=el("input"),l=el("label",null,label);
-  ip.type="radio";ip.name=name;ip.id=id;ip.checked=checked;ip.disabled=lock;ip.onchange=fn;l.htmlFor=id;
-  o.appendChild(ip);o.appendChild(l);return o;
-}
-function view(){
-  var c=C[cur],s=S[cur],lock=!!s.r,box=$("case");box.textContent="";
-  var h=el("div","case-h");h.appendChild(el("span","chip","Caso "+(cur+1)+" · "+c.lv));h.appendChild(el("h3",null,c.t));box.appendChild(h);
-  var q=el("blockquote","claim");q.appendChild(el("span","label","Afirmação em investigação"));q.appendChild(el("p",null,c.q));q.appendChild(el("p","ctx",c.ctx));box.appendChild(q);
-  box.appendChild(el("h4","sub-h","Arquivo de pistas: leia e classifique cada uma"));
-  var g=el("div","clues");
-  c.p.forEach(function(p,j){
-    var a=el("article","clue"),hd=el("header"),t=T[p[0]];
-    hd.appendChild(el("b","pn","P"+(j+1)));hd.appendChild(el("span","tag "+(t[1]?"ver":"oth"),t[0]+(t[1]?" · verificada":"")));
-    a.appendChild(hd);a.appendChild(el("p","meta",p[1]+" · "+p[2]));a.appendChild(el("p","txt",p[3]));
-    var f=el("fieldset","seg"),row=el("div","seg-row");
-    f.appendChild(el("legend","vh","Classifique a pista P"+(j+1)));f.appendChild(row);
-    Object.keys(M).forEach(function(k){row.appendChild(radio("m"+j,"m"+j+k,M[k],s.m[j]===k,lock,"",function(){s.m[j]=k;}));});
-    a.appendChild(f);
-    if(lock){
-      var ok=s.m[j]===p[4],w=el("p","why");a.className+=ok?" hit":" miss";
-      w.appendChild(el("b",null,(ok?"Acertou: ":"Gabarito: ")+M[p[4]]+". "));w.appendChild(document.createTextNode(p[5]));a.appendChild(w);
+
+/* =========================================================
+   DETETIVES DA INFORMAÇÃO — ARMAGEDOM / 2BDEV
+   JavaScript + Supabase
+   ========================================================= */
+
+(() => {
+  "use strict";
+
+  /* =======================================================
+     1. CONFIGURAÇÃO
+     ======================================================= */
+
+  const SQUAD_ID = "3638316e-d5ef-48a5-9426-7eb49b7ac0e6";
+
+  const SUPABASE_CONFIGURED =
+    typeof window.supabase !== "undefined" &&
+    typeof window.supabase.from === "function";
+
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) =>
+    Array.from(root.querySelectorAll(selector));
+
+  const esc = (value) =>
+    String(value ?? "").replace(/[&<>"']/g, (char) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    })[char]);
+
+  const supabaseClient = SUPABASE_CONFIGURED ? window.supabase : null;
+
+  const STORAGE_KEY = "detetives-armagedom-progresso-v1";
+
+  /* =======================================================
+     2. CASOS EDUCACIONAIS
+     As histórias e as pistas continuam no JavaScript.
+     ======================================================= */
+
+  const CASES = [
+    {
+      id: "ciclovias",
+      title: "A cidade das ciclovias",
+      category: "Mobilidade urbana",
+      difficulty: "Iniciante",
+      points: 100,
+      image:
+        "https://images.unsplash.com/photo-1571068316344-75bc76f77890?auto=format&fit=crop&w=900&q=80",
+      claim:
+        "Uma publicação afirma que a cidade duplicou sua rede de ciclovias em apenas um ano.",
+      context:
+        "A postagem apresenta um número expressivo, mas não informa claramente o período comparado, a extensão inicial nem a origem do dado.",
+      verdict: "v",
+      explanation:
+        "A conclusão deve ser sustentada por registros oficiais que informem a extensão da rede e os períodos comparados. Uma imagem isolada ou uma postagem sem referência não basta para comprovar a afirmação.",
+      clues: [
+        {
+          title: "Portal da prefeitura",
+          source: "Portal oficial",
+          type: "of",
+          description:
+            "Uma página municipal apresenta relatórios de mobilidade e informa a extensão da rede em diferentes anos.",
+          classification: "a",
+          explanation:
+            "É uma fonte institucional potencialmente relevante. Confira a data, a metodologia e se os números realmente permitem a comparação."
+        },
+        {
+          title: "Publicação compartilhada",
+          source: "Rede social",
+          type: "rd",
+          description:
+            "Uma postagem repete a afirmação, mas não apresenta links, documentos ou números verificáveis.",
+          classification: "d",
+          explanation:
+            "Repetir uma afirmação não comprova sua veracidade. Sem uma origem verificável, a postagem não sustenta o dado."
+        },
+        {
+          title: "Relatório de mobilidade",
+          source: "Documento técnico",
+          type: "un",
+          description:
+            "Um documento apresenta mapas e medições de ciclovias, mas é necessário verificar a data de publicação.",
+          classification: "a",
+          explanation:
+            "O documento pode ajudar a conferir a extensão da rede. A data e a metodologia precisam corresponder ao período alegado."
+        },
+        {
+          title: "Fotografia de uma avenida",
+          source: "Imagem sem legenda",
+          type: "rd",
+          description:
+            "Uma fotografia mostra uma ciclovia, sem localização ou data confirmadas.",
+          classification: "i",
+          explanation:
+            "A imagem pode mostrar a existência de uma ciclovia, mas não comprova a extensão total da rede nem seu crescimento anual."
+        }
+      ]
+    },
+    {
+      id: "cha",
+      title: "O chá milagroso",
+      category: "Saúde e ciência",
+      difficulty: "Iniciante",
+      points: 150,
+      image:
+        "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=900&q=80",
+      claim:
+        "Um vídeo afirma que um chá elimina uma doença em poucos dias e garante o mesmo resultado para todas as pessoas.",
+      context:
+        "O vídeo usa depoimentos pessoais e expressões como 'cura garantida', mas não apresenta evidências clínicas suficientes.",
+      verdict: "f",
+      explanation:
+        "Depoimentos individuais não demonstram que um tratamento funcione para todos. Uma alegação de cura garantida exige evidências científicas robustas; não se deve abandonar um tratamento indicado por profissionais com base em vídeos.",
+      clues: [
+        {
+          title: "Órgão de saúde",
+          source: "Instituição oficial",
+          type: "of",
+          description:
+            "Uma página de saúde orienta o público a verificar evidências e consultar profissionais antes de usar tratamentos.",
+          classification: "a",
+          explanation:
+            "Orientações institucionais ajudam a contextualizar a alegação, embora seja necessário conferir a informação específica sobre o produto."
+        },
+        {
+          title: "Depoimento em vídeo",
+          source: "Rede social",
+          type: "rd",
+          description:
+            "Uma pessoa diz que melhorou após tomar o chá, sem apresentar avaliação clínica ou outras informações.",
+          classification: "i",
+          explanation:
+            "Uma experiência pessoal não estabelece causalidade e não prova que o produto trate uma doença."
+        },
+        {
+          title: "Artigo científico",
+          source: "Publicação científica",
+          type: "ci",
+          description:
+            "Um estudo científico pode informar quais resultados foram observados, em qual grupo e sob quais condições.",
+          classification: "a",
+          explanation:
+            "Estudos podem fornecer evidências, mas é essencial conferir o método, a qualidade e se o estudo realmente investigou a alegação."
+        },
+        {
+          title: "Anúncio de venda",
+          source: "Página comercial",
+          type: "rd",
+          description:
+            "Uma loja promete cura garantida e pede que o consumidor compre o produto imediatamente.",
+          classification: "d",
+          explanation:
+            "O interesse comercial e a ausência de evidências tornam o anúncio insuficiente para comprovar uma alegação médica."
+        }
+      ]
+    },
+    {
+      id: "escola",
+      title: "A escola que mais cresceu",
+      category: "Educação e estatística",
+      difficulty: "Avançado",
+      points: 300,
+      image:
+        "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=900&q=80",
+      claim:
+        "Um gráfico afirma que determinada escola teve o maior crescimento de desempenho da região.",
+      context:
+        "O gráfico mostra barras de alturas diferentes, mas não informa com clareza a fonte, o indicador ou o período de comparação.",
+      verdict: "i",
+      explanation:
+        "Sem identificar o indicador, o período, a população analisada e a origem dos números, não é possível confirmar que a escola foi a que mais cresceu. O gráfico, sozinho, não resolve essas lacunas.",
+      clues: [
+        {
+          title: "Gráfico compartilhado",
+          source: "Publicação sem referência",
+          type: "rd",
+          description:
+            "A imagem compara três escolas, mas não inclui fonte dos dados, unidade de medida nem período.",
+          classification: "i",
+          explanation:
+            "Sem esses elementos, não é possível verificar o significado das barras ou reproduzir a comparação."
+        },
+        {
+          title: "Base de dados educacionais",
+          source: "Base de dados pública",
+          type: "bd",
+          description:
+            "Uma base pública pode conter indicadores por escola e por ano, permitindo comparar os dados originais.",
+          classification: "a",
+          explanation:
+            "É uma fonte adequada para investigação, desde que o indicador e os períodos sejam compatíveis com a afirmação."
+        },
+        {
+          title: "Comentário de um estudante",
+          source: "Relato pessoal",
+          type: "rd",
+          description:
+            "Um comentário diz que a escola melhorou muito, mas não apresenta dados comparativos.",
+          classification: "d",
+          explanation:
+            "O comentário é uma experiência pessoal, não uma medição que comprove o maior crescimento regional."
+        },
+        {
+          title: "Relatório institucional",
+          source: "Documento educacional",
+          type: "of",
+          description:
+            "Um relatório apresenta resultados de avaliação, mas ainda é necessário confirmar quais escolas e anos foram incluídos.",
+          classification: "a",
+          explanation:
+            "O relatório pode ajudar a testar a afirmação, desde que cubra o conjunto de escolas e o intervalo analisado."
+        }
+      ]
+    },
+    {
+      id: "desemprego",
+      title: "O desemprego pela metade",
+      category: "Economia e dados",
+      difficulty: "Intermediário",
+      points: 200,
+      image:
+        "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=900&q=80",
+      claim:
+        "Uma postagem afirma que o desemprego caiu pela metade e apresenta o número como prova definitiva de melhora geral.",
+      context:
+        "O conteúdo não explica o período usado na comparação nem informa se o indicador se refere a uma região específica ou ao país inteiro.",
+      verdict: "f",
+      explanation:
+        "A conclusão apresentada como prova definitiva não é sustentada por uma comparação sem período, território, definição do indicador e fonte verificável. Uma queda só pode ser avaliada com os dados completos e o contexto correto.",
+      clues: [
+        {
+          title: "Estatísticas oficiais",
+          source: "Base de dados pública",
+          type: "bd",
+          description:
+            "Uma base estatística oficial publica indicadores de trabalho por período e região.",
+          classification: "a",
+          explanation:
+            "A base permite conferir os valores originais, desde que sejam selecionados os períodos e os recortes corretos."
+        },
+        {
+          title: "Imagem com uma porcentagem",
+          source: "Publicação compartilhada",
+          type: "rd",
+          description:
+            "Uma imagem mostra uma porcentagem em destaque, mas não informa a fonte ou o intervalo de tempo.",
+          classification: "i",
+          explanation:
+            "Uma porcentagem sem referência e sem período não permite validar a comparação."
+        },
+        {
+          title: "Manchete antiga",
+          source: "Notícia jornalística",
+          type: "im",
+          description:
+            "Uma manchete relata uma mudança no mercado de trabalho em um período anterior.",
+          classification: "i",
+          explanation:
+            "A notícia pode ajudar a entender o contexto histórico, mas não comprova automaticamente uma afirmação sobre outro período."
+        },
+        {
+          title: "Tabela com datas e definições",
+          source: "Relatório estatístico",
+          type: "of",
+          description:
+            "Uma tabela pode apresentar as datas, a definição do indicador e os valores necessários para a comparação.",
+          classification: "a",
+          explanation:
+            "Esses dados são relevantes para testar a afirmação. Confira se a redução alegada é realmente demonstrada."
+        }
+      ]
+    },
+    {
+      id: "espelhos",
+      title: "Espelhos na montanha",
+      category: "Imagem e contexto",
+      difficulty: "Intermediário",
+      points: 250,
+      image:
+        "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=900&q=80",
+      claim:
+        "Uma imagem viral afirma mostrar uma instalação gigantesca de espelhos em uma montanha, construída recentemente.",
+      context:
+        "A imagem é compartilhada sem localização, data original ou identificação do projeto. A aparência da fotografia não confirma a legenda.",
+      verdict: "v",
+      explanation:
+        "A existência de instalações solares com espelhos pode ser documentada por fontes técnicas e registros verificáveis. Para confirmar esta publicação específica, porém, é necessário identificar o local e verificar se a imagem corresponde ao projeto mencionado.",
+      clues: [
+        {
+          title: "Imagem viral",
+          source: "Rede social",
+          type: "rd",
+          description:
+            "A fotografia aparece em uma postagem com legenda chamativa, mas sem crédito ou localização.",
+          classification: "i",
+          explanation:
+            "A imagem isolada não permite confirmar o local, a data ou a descrição apresentada."
+        },
+        {
+          title: "Registro de projeto energético",
+          source: "Documento institucional",
+          type: "of",
+          description:
+            "Um registro técnico descreve instalações de energia solar e pode incluir localização e fotografias.",
+          classification: "a",
+          explanation:
+            "O registro pode confirmar a existência do projeto, desde que corresponda à imagem e à localização alegadas."
+        },
+        {
+          title: "Busca reversa de imagem",
+          source: "Ferramenta de verificação",
+          type: "bd",
+          description:
+            "Uma busca por imagens semelhantes pode localizar versões mais antigas e páginas que publicaram a fotografia.",
+          classification: "a",
+          explanation:
+            "A busca ajuda a rastrear a origem da imagem. Os resultados precisam ser abertos e verificados individualmente."
+        },
+        {
+          title: "Comentário sem fonte",
+          source: "Discussão online",
+          type: "rd",
+          description:
+            "Um comentário afirma conhecer o local, mas não oferece endereço, documento ou outra evidência.",
+          classification: "d",
+          explanation:
+            "Uma alegação sem referência verificável não confirma a origem da imagem."
+        }
+      ]
     }
-    g.appendChild(a);
-  });
-  box.appendChild(g);
-  var pn=el("section","panel"),f2=el("fieldset","seg"),r2=el("div","seg-row");
-  f2.appendChild(el("legend",null,"Seu veredito"));f2.appendChild(r2);
-  [["v","ok"],["f","bad"],["i","warn"]].forEach(function(x){r2.appendChild(radio("vd","vd"+x[0],V[x[0]],s.v===x[0],lock,"v-"+x[1],function(){s.v=x[0];}));});
-  pn.appendChild(f2);
-  var fd=el("div","field"),lb=el("label",null,"Justificativa (cite as pistas, ex.: P1 e P2)"),ta=el("textarea");
-  ta.id="just";lb.htmlFor="just";ta.value=s.j;ta.disabled=lock;ta.oninput=function(){s.j=ta.value;};
-  fd.appendChild(lb);fd.appendChild(ta);pn.appendChild(fd);
-  if(!lock){
-    var bt=el("button","btn primary","Entregar veredito"),st=el("p","hint");
-    bt.type="button";bt.onclick=submit;st.id="st";st.setAttribute("role","status");pn.appendChild(bt);pn.appendChild(st);
+  ];
+
+  const SOURCE_TYPES = {
+    of: "Site oficial",
+    un: "Universidade",
+    ci: "Instituição científica",
+    bd: "Base de dados pública",
+    im: "Imprensa",
+    rd: "Rede social ou blog"
+  };
+
+  const CLASSIFICATIONS = {
+    a: "Apoia",
+    c: "Contradiz",
+    i: "Incompleta",
+    d: "Descartar"
+  };
+
+  const VERDICTS = {
+    v: "Verdadeira",
+    f: "Falsa",
+    i: "Inconclusiva"
+  };
+
+  const MISSION_SLUGS = {
+    "Iniciante": "detetive-de-fontes",
+    "Intermediário": "pistas-em-conflito",
+    "Avançado": "relatorio-final"
+  };
+
+  /* =======================================================
+     3. ESTADO DO JOGO
+     ======================================================= */
+
+  const state = {
+    current: 0,
+    screen: "overview",
+    answers: {},
+    verdict: "",
+    justification: "",
+    results: {},
+    completed: new Set(),
+    missions: [],
+    remoteRecords: [],
+    loading: false,
+    saving: false,
+    error: "",
+    startedAt: null
+  };
+
+  /* =======================================================
+     4. PERSISTÊNCIA LOCAL
+     ======================================================= */
+
+  function loadLocalProgress() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+
+      const saved = JSON.parse(raw);
+
+      if (saved.results && typeof saved.results === "object") {
+        state.results = saved.results;
+      }
+
+      if (Array.isArray(saved.completed)) {
+        state.completed = new Set(saved.completed);
+      }
+    } catch (error) {
+      console.warn("Não foi possível ler o progresso local:", error);
+    }
   }
-  box.appendChild(pn);
-  if(lock){
-    var r=s.r,rp=el("section","panel result"),ul=el("ul","sc");
-    rp.id="res";rp.tabIndex=-1;
-    rp.appendChild(el("h4",null,(s.v===c.a?"Veredito correto: ":"Gabarito: ")+V[c.a]));
-    rp.appendChild(el("p",null,c.res));
-    [["Precisão",r.pr],["Fontes",r.fo],["Evidências",r.ev],["Clareza",r.cl]].forEach(function(x){ul.appendChild(el("li",null,x[0]+": "+x[1]+"/25"));});
-    rp.appendChild(ul);rp.appendChild(el("p","tot","Total do caso: "+r.t+"/100"));
-    var rb=el("button","btn sm","Refazer este caso");rb.type="button";rb.onclick=function(){reset(cur);render();};
-    rp.appendChild(rb);box.appendChild(rp);
+
+  function saveLocalProgress() {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          results: state.results,
+          completed: [...state.completed]
+        })
+      );
+    } catch (error) {
+      console.warn("Não foi possível guardar o progresso local:", error);
+    }
   }
-}
-function render(){
-  var tabs=$("tabs"),done=0,tot=0;tabs.textContent="";
-  C.forEach(function(c,i){
-    var b=el("button","tab"+(i===cur?" on":""));b.type="button";b.setAttribute("aria-pressed",i===cur?"true":"false");
-    b.appendChild(el("b",null,"Caso "+(i+1)));b.appendChild(el("span",null,S[i].r?"Resolvido · "+S[i].r.t+"/100":c.lv));
-    b.onclick=function(){cur=i;render();};tabs.appendChild(b);
-    if(S[i].r){done++;tot+=S[i].r.t;}
-  });
-  $("grand").textContent="Casos resolvidos: "+done+"/5 · Pontos: "+tot+"/500";
-  view();
-}
-render();
+
+  /* =======================================================
+     5. SUPABASE
+     ======================================================= */
+
+  async function loadSupabaseData() {
+    if (!supabaseClient) {
+      console.warn(
+        "Supabase não configurado. O jogo continuará funcionando localmente."
+      );
+      return;
+    }
+
+    state.loading = true;
+    renderGrand();
+
+    try {
+      const [missionsResult, investigationsResult] = await Promise.all([
+        supabaseClient
+          .from("missoes")
+          .select("id, slug, titulo, dificuldade, pontos, ativo")
+          .eq("ativo", true),
+
+        supabaseClient
+          .from("investigacoes")
+          .select(
+            "id, squad_id, missao_id, nome_jogador, resposta, correta, pontos_obtidos, concluida, iniciada_em, concluida_em"
+          )
+          .eq("squad_id", SQUAD_ID)
+          .eq("concluida", true)
+      ]);
+
+      if (missionsResult.error) throw missionsResult.error;
+      if (investigationsResult.error) throw investigationsResult.error;
+
+      state.missions = missionsResult.data || [];
+      state.remoteRecords = investigationsResult.data || [];
+
+      // Sincroniza o histórico persistido com os indicadores.
+      state.remoteRecords.forEach((record) => {
+        if (!record.missao_id) return;
+
+        const mission = state.missions.find(
+          (item) => item.id === record.missao_id
+        );
+
+        if (!mission) return;
+
+        const matchingCase = CASES.find((item) => {
+          return MISSION_SLUGS[item.difficulty] === mission.slug;
+        });
+
+        if (!matchingCase) return;
+
+        state.completed.add(matchingCase.id);
+
+        // Preserva um resultado local mais recente, se já existir.
+        if (!state.results[matchingCase.id]) {
+          state.results[matchingCase.id] = {
+            total: Number(record.pontos_obtidos) || 0,
+            verdict: record.resposta || "",
+            correct: Boolean(record.correta),
+            persisted: true
+          };
+        }
+      });
+
+      saveLocalProgress();
+    } catch (error) {
+      console.error("Erro ao carregar dados do Supabase:", error);
+      state.error =
+        "Não foi possível carregar o histórico do banco. O jogo continua disponível; confira as políticas RLS e a conexão.";
+    } finally {
+      state.loading = false;
+      renderGrand();
+    }
+  }
+
+  function findMissionForCase(item) {
+    const slug = MISSION_SLUGS[item.difficulty];
+    return state.missions.find((mission) => mission.slug === slug) || null;
+  }
+
+  async function saveInvestigation(item, result) {
+    if (!supabaseClient) {
+      return {
+        saved: false,
+        message: "Supabase não configurado. Resultado guardado apenas neste navegador."
+      };
+    }
+
+    const mission = findMissionForCase(item);
+
+    if (!mission) {
+      return {
+        saved: false,
+        message:
+          "Resultado calculado, mas não foi encontrada uma missão correspondente no Supabase."
+      };
+    }
+
+    const payload = {
+      squad_id: SQUAD_ID,
+      missao_id: mission.id,
+      noticia_id: null,
+      nome_jogador: "Investigador ARMAGEDOM",
+      resposta: VERDICTS[result.verdict] || result.verdict,
+      correta: result.correct,
+      pontos_obtidos: result.total,
+      concluida: true,
+      concluida_em: new Date().toISOString()
+    };
+
+    state.saving = true;
+    renderGrand();
+
+    try {
+      const { data, error } = await supabaseClient
+        .from("investigacoes")
+        .insert(payload)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      state.remoteRecords.push(data);
+
+      return {
+        saved: true,
+        message: "Investigação salva no Supabase."
+      };
+    } catch (error) {
+      console.error("Erro ao salvar investigação:", error);
+
+      return {
+        saved: false,
+        message:
+          "Não foi possível salvar no Supabase. Confira a conexão, as permissões RLS e o console do navegador."
+      };
+    } finally {
+      state.saving = false;
+      renderGrand();
+    }
+  }
+
+  /* =======================================================
+     6. CÁLCULO DA PONTUAÇÃO
+     ======================================================= */
+
+  function calculateScore(item, answers, verdict, justification) {
+    let exactClassifications = 0;
+    let discardedCorrectly = 0;
+    let supportedClues = 0;
+
+    item.clues.forEach((clue, index) => {
+      const answer = answers[index];
+
+      if (answer === clue.classification) {
+        exactClassifications++;
+      }
+
+      if (
+        (answer === "d" && clue.classification === "d") ||
+        (answer !== "d" && clue.classification !== "d")
+      ) {
+        discardedCorrectly++;
+      }
+
+      if (
+        answer === "a" &&
+        (clue.classification === "a" || clue.classification === "i")
+      ) {
+        supportedClues++;
+      }
+    });
+
+    const totalClues = item.clues.length;
+    const classificationScore = Math.round(
+      (exactClassifications / totalClues) * 35
+    );
+
+    const discardScore = Math.round(
+      (discardedCorrectly / totalClues) * 15
+    );
+
+    const verdictScore = verdict === item.verdict ? 25 : 0;
+
+    const cleanText = justification.trim();
+    const lengthScore = Math.min(15, Math.round((cleanText.length / 100) * 15));
+    const evidenceScore = supportedClues > 0 ? 10 : 0;
+    const clarityScore = Math.min(25, lengthScore + evidenceScore);
+
+    const total = Math.min(
+      100,
+      classificationScore + discardScore + verdictScore + clarityScore
+    );
+
+    return {
+      total,
+      classificationScore,
+      discardScore,
+      verdictScore,
+      clarityScore,
+      exactClassifications,
+      totalClues,
+      correct: verdict === item.verdict,
+      verdict,
+      justification: cleanText
+    };
+  }
+
+  /* =======================================================
+     7. GALERIA E ABAS
+     ======================================================= */
+
+  function renderTabs() {
+    const tabs = $("#tabs");
+    if (!tabs) return;
+
+    tabs.innerHTML = CASES.map((item, index) => `
+      <button
+        class="tab ${index === state.current ? "on" : ""}"
+        type="button"
+        data-open-case="${index}"
+        aria-pressed="${index === state.current}"
+      >
+        <b>${esc(item.title)}</b>
+        <span>${esc(item.difficulty)} · ${state.completed.has(item.id) ? "Concluído" : "Pendente"}</span>
+      </button>
+    `).join("");
+  }
+
+  function setActiveCover(index) {
+    $$(".case-cover").forEach((cover, coverIndex) => {
+      const active = coverIndex === index;
+      cover.classList.toggle("is-active", active);
+
+      if (active) {
+        cover.setAttribute("aria-current", "true");
+      } else {
+        cover.removeAttribute("aria-current");
+      }
+    });
+  }
+
+  /* =======================================================
+     8. INDICADORES E PLACAR
+     ======================================================= */
+
+  function getCompletedCount() {
+    return state.completed.size;
+  }
+
+  function getTotalPoints() {
+    return Object.values(state.results).reduce(
+      (sum, result) => sum + (Number(result.total) || 0),
+      0
+    );
+  }
+
+  function renderGrand() {
+    const grand = $("#grand");
+
+    const completed = getCompletedCount();
+    const points = getTotalPoints();
+    const percent = Math.round((completed / CASES.length) * 100);
+
+    if (grand) {
+      grand.innerHTML = `
+        <span>Progresso da investigação</span>
+        <strong>${completed}/${CASES.length} casos concluídos</strong>
+        <span>·</span>
+        <strong>${points} pontos locais</strong>
+        <div class="bar-track" role="progressbar"
+          aria-label="Progresso dos casos"
+          aria-valuemin="0"
+          aria-valuemax="${CASES.length}"
+          aria-valuenow="${completed}">
+          <i style="width:${percent}%"></i>
+        </div>
+        ${
+          state.loading
+            ? "<p>Carregando histórico do Supabase…</p>"
+            : ""
+        }
+        ${
+          state.saving
+            ? "<p>Salvando investigação…</p>"
+            : ""
+        }
+        ${
+          state.error
+            ? `<p role="status">${esc(state.error)}</p>`
+            : ""
+        }
+      `;
+    }
+
+    const casesCount = $("#cases-count");
+    const reportsCount = $("#reports-count");
+    const casesMeter = $("#cases-meter");
+    const reportsMeter = $("#reports-meter");
+    const totalScore = $("#total-score");
+
+    if (casesCount) casesCount.textContent = `${completed}/${CASES.length}`;
+    if (reportsCount) reportsCount.textContent = `${completed}/${CASES.length}`;
+    if (casesMeter) casesMeter.style.width = `${percent}%`;
+    if (reportsMeter) reportsMeter.style.width = `${percent}%`;
+    if (totalScore) totalScore.textContent = String(points);
+
+    updateChecklist();
+    renderRanking();
+  }
+
+  function updateChecklist() {
+    const checklist = [
+      ["#check-source", getCompletedCount() > 0],
+      ["#check-date", getCompletedCount() > 0],
+      ["#check-evidence", getCompletedCount() > 0],
+      ["#check-report", getCompletedCount() > 0]
+    ];
+
+    checklist.forEach(([selector, done]) => {
+      const element = $(selector);
+      if (!element) return;
+
+      const listItem = element.matches("li")
+        ? element
+        : element.closest("li");
+
+      if (listItem) listItem.classList.toggle("done", done);
+    });
+  }
+
+  function renderRanking() {
+    const body = $("#rank-body");
+    const rankingScore = $("#ranking-score");
+
+    if (rankingScore) {
+      rankingScore.textContent = String(getTotalPoints());
+    }
+
+    if (!body) return;
+
+    const points = getTotalPoints();
+    const completed = getCompletedCount();
+
+    body.innerHTML = `
+      <tr class="${points > 0 ? "first" : ""}">
+        <td class="pos">01</td>
+        <td>
+          <div class="nm">ARMAGEDOM</div>
+          <small>Turma 2BDEV</small>
+        </td>
+        <td>
+          <div class="pts">
+            <span>${points} pontos</span>
+            <i style="--w:${Math.min(100, points / 10)}%"></i>
+          </div>
+        </td>
+        <td>${completed}/${CASES.length}</td>
+      </tr>
+    `;
+  }
+
+  /* =======================================================
+     9. RELATÓRIO
+     ======================================================= */
+
+  function renderReport(item, result) {
+    const reportBody = $("#report-body");
+    if (!reportBody) return;
+
+    const answerRows = item.clues.map((clue, index) => {
+      const answer = state.answers[index] || "";
+      return `
+        <li>
+          <strong>${esc(clue.title)}</strong>
+          <span>${esc(clue.source)}</span>
+          <span>Classificação: ${esc(CLASSIFICATIONS[answer] || "Não informada")}</span>
+          <span class="r-meta">${esc(clue.explanation)}</span>
+        </li>
+      `;
+    }).join("");
+
+    reportBody.innerHTML = `
+      <div class="r-row">
+        <div class="r-h">Caso</div>
+        <div>${esc(item.title)}</div>
+      </div>
+      <div class="r-row">
+        <div class="r-h">Afirmação</div>
+        <div>${esc(item.claim)}</div>
+      </div>
+      <div class="r-row">
+        <div class="r-h">Veredito</div>
+        <div>
+          <span class="vchip ${
+            result.verdict === "v"
+              ? "verdadeira"
+              : result.verdict === "f"
+                ? "falsa"
+                : "inconclusiva"
+          }">${esc(VERDICTS[result.verdict] || "Não informado")}</span>
+        </div>
+      </div>
+      <div class="r-row">
+        <div class="r-h">Justificativa</div>
+        <div>${esc(result.justification)}</div>
+      </div>
+      <div class="r-row">
+        <div class="r-h">Evidências analisadas</div>
+        <div><ol class="r-list">${answerRows}</ol></div>
+      </div>
+      <div class="r-row">
+        <div class="r-h">Pontuação</div>
+        <div>${result.total}/100 pontos</div>
+      </div>
+    `;
+
+    const report = $("#report");
+    if (report) report.hidden = false;
+  }
+
+  async function copyReport() {
+    const reportBody = $("#report-body");
+    const status = $("#copy-status");
+    const fallback = $("#copy-fallback");
+
+    if (!reportBody) return;
+
+    const text = reportBody.innerText.trim();
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        throw new Error("Clipboard indisponível");
+      }
+
+      if (status) status.textContent = "Relatório copiado.";
+    } catch {
+      if (fallback) {
+        fallback.hidden = false;
+        fallback.value = text;
+        fallback.focus();
+        fallback.select();
+      }
+
+      if (status) {
+        status.textContent =
+          "Selecione e copie o texto do relatório manualmente.";
+      }
+    }
+  }
+
+  /* =======================================================
+     10. TELA INICIAL DO CASO
+     ======================================================= */
+
+  function renderOverview() {
+    const item = CASES[state.current];
+    const container = $("#case");
+    if (!item || !container) return;
+
+    state.screen = "overview";
+
+    container.innerHTML = `
+      <div class="case-h">
+        <span class="chip">Caso ${String(state.current + 1).padStart(2, "0")}</span>
+        <span class="chip">${esc(item.difficulty)}</span>
+        <span class="chip">${item.points} pontos disponíveis</span>
+      </div>
+
+      <h3>${esc(item.title)}</h3>
+
+      <div class="claim">
+        <span class="label">Afirmação investigada</span>
+        <p>${esc(item.claim)}</p>
+        <p class="ctx">${esc(item.context)}</p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h">
+          <h3>Objetivo da investigação</h3>
+        </div>
+        <p>
+          Analise as quatro pistas, classifique cada evidência e escolha
+          um veredito. Justifique sua conclusão com base nas informações
+          disponíveis, distinguindo evidências de opiniões.
+        </p>
+        <p class="hint" style="margin-top:12px">
+          Este é um caso educacional simulado. As pistas servem para
+          praticar verificação de informações, não para afirmar fatos reais.
+        </p>
+        <button class="btn primary" type="button" data-action="start">
+          ${state.completed.has(item.id) ? "Reinvestigar caso" : "Iniciar investigação"}
+        </button>
+      </div>
+    `;
+
+    setActiveCover(state.current);
+    renderTabs();
+  }
+
+  /* =======================================================
+     11. TELA DE ANÁLISE DAS PISTAS
+     ======================================================= */
+
+  function renderAnalysis() {
+    const item = CASES[state.current];
+    const container = $("#case");
+    if (!item || !container) return;
+
+    state.screen = "analysis";
+
+    const clueCards = item.clues.map((clue, index) => `
+      <article class="clue">
+        <header>
+          <span class="pn">0${index + 1}</span>
+          <span class="tag ${clue.type === "of" || clue.type === "ci" || clue.type === "bd" ? "ver" : "oth"}">
+            ${esc(SOURCE_TYPES[clue.type] || clue.source)}
+          </span>
+        </header>
+
+        <h4>${esc(clue.title)}</h4>
+        <p class="meta">${esc(clue.source)}</p>
+        <p class="txt">${esc(clue.description)}</p>
+
+        <fieldset class="seg">
+          <legend>Como você classifica esta pista?</legend>
+          <div class="seg-row">
+            ${Object.entries(CLASSIFICATIONS).map(([key, label]) => `
+              <span class="opt">
+                <input
+                  type="radio"
+                  id="clue-${index}-${key}"
+                  name="clue-${index}"
+                  value="${key}"
+                  ${state.answers[index] === key ? "checked" : ""}
+                  required
+                >
+                <label for="clue-${index}-${key}">${esc(label)}</label>
+              </span>
+            `).join("")}
+          </div>
+        </fieldset>
+      </article>
+    `).join("");
+
+    container.innerHTML = `
+      <div class="case-h">
+        <span class="chip">Caso ${String(state.current + 1).padStart(2, "0")}</span>
+        <span class="chip">${esc(item.category)}</span>
+      </div>
+
+      <h3>${esc(item.title)}</h3>
+
+      <div class="claim">
+        <span class="label">Afirmação investigada</span>
+        <p>${esc(item.claim)}</p>
+        <p class="ctx">${esc(item.context)}</p>
+      </div>
+
+      <form id="active-investigation-form">
+        <h4 class="sub-h">Arquivo de evidências</h4>
+        <div class="clues">${clueCards}</div>
+
+        <div class="panel">
+          <fieldset class="seg">
+            <legend>Qual é o seu veredito?</legend>
+            <div class="seg-row">
+              <span class="opt v-ok">
+                <input type="radio" id="verdict-v" name="veredito" value="v"
+                  ${state.verdict === "v" ? "checked" : ""} required>
+                <label for="verdict-v">Verdadeira</label>
+              </span>
+              <span class="opt v-bad">
+                <input type="radio" id="verdict-f" name="veredito" value="f"
+                  ${state.verdict === "f" ? "checked" : ""} required>
+                <label for="verdict-f">Falsa</label>
+              </span>
+              <span class="opt v-warn">
+                <input type="radio" id="verdict-i" name="veredito" value="i"
+                  ${state.verdict === "i" ? "checked" : ""} required>
+                <label for="verdict-i">Inconclusiva</label>
+              </span>
+            </div>
+          </fieldset>
+
+          <div class="field">
+            <label for="justification-input">Justifique seu veredito</label>
+            <textarea
+              id="justification-input"
+              name="justificativa"
+              minlength="20"
+              maxlength="1500"
+              required
+              placeholder="Explique quais evidências sustentam sua conclusão e quais limitações você encontrou."
+            >${esc(state.justification)}</textarea>
+            <span class="hint">Escreva pelo menos 20 caracteres e cite as pistas que foram importantes para sua análise.</span>
+          </div>
+
+          <p id="form-error" class="hint" role="alert"></p>
+
+          <div class="cta">
+            <button class="btn primary" type="submit">Registrar veredito</button>
+            <button class="btn" type="button" data-action="back">Voltar ao caso</button>
+          </div>
+        </div>
+      </form>
+    `;
+
+    // Atualiza as respostas à medida que o usuário preenche o formulário.
+    const form = $("#active-investigation-form");
+
+    form?.addEventListener("change", (event) => {
+      const target = event.target;
+
+      if (target.matches('input[type="radio"][name^="clue-"]')) {
+        const index = Number(target.name.replace("clue-", ""));
+        state.answers[index] = target.value;
+      }
+
+      if (target.matches('input[name="veredito"]')) {
+        state.verdict = target.value;
+      }
+    });
+
+    $("#justification-input")?.addEventListener("input", (event) => {
+      state.justification = event.target.value;
+    });
+
+    form?.addEventListener("submit", handleSubmit);
+    renderTabs();
+  }
+
+  /* =======================================================
+     12. RESULTADO E FEEDBACK
+     ======================================================= */
+
+  async function renderResult(result, persistedMessage = "") {
+    const item = CASES[state.current];
+    const container = $("#case");
+    if (!item || !container) return;
+
+    state.screen = "result";
+
+    const feedback = item.clues.map((clue, index) => {
+      const answer = state.answers[index] || "";
+      const correct = answer === clue.classification;
+
+      return `
+        <li class="${correct ? "ok" : "warn"}">
+          <b>${correct ? "✓" : "!"}</b>
+          <span>
+            <strong>${esc(clue.title)} — ${esc(CLASSIFICATIONS[answer] || "Sem classificação")}</strong><br>
+            ${esc(clue.explanation)}
+          </span>
+        </li>
+      `;
+    }).join("");
+
+    container.innerHTML = `
+      <div class="result">
+        <span class="chip">Investigação finalizada</span>
+        <h3>${esc(item.title)}</h3>
+
+        <div class="total">
+          <div>
+            <span>Sua pontuação</span>
+            <br>
+            <small>Máximo de 100 pontos por caso</small>
+          </div>
+          <b>${result.total}</b>
+        </div>
+
+        <div class="claim">
+          <span class="label">Seu veredito</span>
+          <p>${esc(VERDICTS[result.verdict])}</p>
+          <p class="ctx">
+            ${result.correct
+              ? "Seu veredito corresponde à conclusão definida para este caso educacional."
+              : "Seu veredito difere da conclusão definida para este caso. Revise as pistas e os critérios."}
+          </p>
+        </div>
+
+        <h4>Como foi calculada a pontuação</h4>
+        <ul class="sc">
+          <li>Classificações: ${result.classificationScore}/35</li>
+          <li>Descarte de pistas: ${result.discardScore}/15</li>
+          <li>Veredito: ${result.verdictScore}/25</li>
+          <li>Justificativa: ${result.clarityScore}/25</li>
+        </ul>
+
+        <h4>Revisão das pistas</h4>
+        <ul class="flags">${feedback}</ul>
+
+        <div class="panel">
+          <h4>Conclusão de referência</h4>
+          <p>${esc(item.explanation)}</p>
+        </div>
+
+        <p class="hint" role="status">${esc(persistedMessage)}</p>
+
+        <div class="cta">
+          <button class="btn primary" type="button" data-action="review">
+            Revisar pistas
+          </button>
+          <button class="btn" type="button" data-action="report">
+            Ver relatório
+          </button>
+          ${
+            state.current < CASES.length - 1
+              ? '<button class="btn" type="button" data-action="next">Próximo caso →</button>'
+              : '<button class="btn" type="button" data-action="finish">Ver conclusão</button>'
+          }
+        </div>
+      </div>
+    `;
+
+    renderReport(item, result);
+    renderGrand();
+    renderTabs();
+  }
+
+  /* =======================================================
+     13. FORMULÁRIO E SALVAMENTO
+     ======================================================= */
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    if (state.saving) return;
+
+    const item = CASES[state.current];
+    const form = event.currentTarget;
+    const errorBox = $("#form-error", form);
+
+    // Coleta o estado atual do formulário.
+    item.clues.forEach((_, index) => {
+      const selected = $(`input[name="clue-${index}"]:checked`, form);
+      state.answers[index] = selected ? selected.value : "";
+    });
+
+    const verdictInput = $('input[name="veredito"]:checked', form);
+    state.verdict = verdictInput ? verdictInput.value : "";
+    state.justification = $("#justification-input", form)?.value.trim() || "";
+
+    const missingClue = item.clues.some(
+      (_, index) => !state.answers[index]
+    );
+
+    if (missingClue || !state.verdict || state.justification.length < 20) {
+      if (errorBox) {
+        errorBox.textContent =
+          "Classifique todas as pistas, escolha um veredito e escreva uma justificativa de pelo menos 20 caracteres.";
+      }
+      return;
+    }
+
+    const result = calculateScore(
+      item,
+      state.answers,
+      state.verdict,
+      state.justification
+    );
+
+    state.results[item.id] = result;
+    state.completed.add(item.id);
+    saveLocalProgress();
+
+    // Mostra o resultado imediatamente; o banco é salvo em seguida.
+    await renderResult(result, "Salvando resultado…");
+
+    const saveStatus = await saveInvestigation(item, result);
+
+    const status = $("#case .result .hint");
+    if (status) status.textContent = saveStatus.message;
+
+    if (saveStatus.saved) {
+      state.results[item.id].persisted = true;
+      saveLocalProgress();
+    }
+
+    renderGrand();
+    renderTabs();
+  }
+
+  /* =======================================================
+     14. RELATÓRIO FINAL
+     ======================================================= */
+
+  function renderFinalSummary() {
+    const container = $("#case");
+    if (!container) return;
+
+    const completed = getCompletedCount();
+    const points = getTotalPoints();
+
+    state.screen = "final";
+
+    container.innerHTML = `
+      <div class="result">
+        <span class="chip">Arquivo encerrado</span>
+        <h3>Relatório da equipe ARMAGEDOM</h3>
+        <p>
+          Você concluiu ${completed} de ${CASES.length} casos e acumulou
+          ${points} pontos nos resultados disponíveis neste navegador.
+        </p>
+
+        <div class="total">
+          <div>
+            <span>Pontuação total</span>
+            <br>
+            <small>Turma 2BDEV</small>
+          </div>
+          <b>${points}</b>
+        </div>
+
+        <h4>Casos concluídos</h4>
+        <ul class="flags">
+          ${CASES.map((item) => {
+            const result = state.results[item.id];
+            return `
+              <li class="${result ? "ok" : "warn"}">
+                <b>${result ? "✓" : "!"}</b>
+                <span>
+                  <strong>${esc(item.title)}</strong><br>
+                  ${result
+                    ? `${result.total}/100 pontos`
+                    : "Ainda não concluído"}
+                </span>
+              </li>
+            `;
+          }).join("")}
+        </ul>
+
+        <div class="cta">
+          <button class="btn primary" type="button" data-action="first">
+            Voltar aos casos
+          </button>
+          <button class="btn" type="button" data-action="report">
+            Abrir relatório disponível
+          </button>
+        </div>
+      </div>
+    `;
+
+    renderGrand();
+  }
+
+  /* =======================================================
+     15. AÇÕES DE NAVEGAÇÃO
+     ======================================================= */
+
+  function openCase(index) {
+    if (!Number.isInteger(index) || index < 0 || index >= CASES.length) {
+      return;
+    }
+
+    state.current = index;
+    state.answers = {};
+    state.verdict = "";
+    state.justification = "";
+    state.startedAt = new Date().toISOString();
+
+    const existing = state.results[CASES[index].id];
+
+    if (existing) {
+      // Ao reabrir, permite uma nova tentativa, sem apagar o histórico salvo.
+      state.answers = {};
+    }
+
+    renderOverview();
+    scrollToInvestigation();
+  }
+
+  function startCase() {
+    state.answers = {};
+    state.verdict = "";
+    state.justification = "";
+    renderAnalysis();
+  }
+
+  function scrollToInvestigation() {
+    const section = $("#casos") || $("#case");
+    section?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+      block: "start"
+    });
+  }
+
+  function handleAction(action) {
+    switch (action) {
+      case "start":
+        startCase();
+        break;
+
+      case "back":
+        renderOverview();
+        break;
+
+      case "review":
+        renderAnalysis();
+        break;
+
+      case "next":
+        openCase(Math.min(state.current + 1, CASES.length - 1));
+        break;
+
+      case "finish":
+        renderFinalSummary();
+        break;
+
+      case "first":
+        openCase(0);
+        break;
+
+      case "report": {
+        const item = CASES[state.current];
+        const result = state.results[item.id];
+
+        if (result) {
+          renderReport(item, result);
+          $("#report")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+          const report = $("#report-body");
+          if (report) {
+            report.innerHTML =
+              "<p>Conclua uma investigação para gerar um relatório.</p>";
+          }
+          $("#report")?.removeAttribute("hidden");
+        }
+        break;
+      }
+
+      default:
+        break;
+    }
+  }
+
+  /* =======================================================
+     16. EFEITOS VISUAIS
+     ======================================================= */
+
+  function installMotionStyles() {
+    if ($("#detetives-motion-styles")) return;
+
+    const style = document.createElement("style");
+    style.id = "detetives-motion-styles";
+
+    style.textContent = `
+      @keyframes caseReveal {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      #case > * {
+        animation: caseReveal .32s ease both;
+      }
+
+      .clue {
+        transition: transform .2s ease, box-shadow .2s ease;
+      }
+
+      .clue:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 24px rgba(15, 30, 42, .10);
+      }
+
+      .case-cover {
+        transition: transform .2s ease, border-color .2s ease;
+      }
+
+      .case-cover:hover {
+        transform: translateY(-3px);
+      }
+
+      .bar-track i {
+        transition: width .35s ease;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #case > *, .clue, .case-cover {
+          animation: none !important;
+          transition: none !important;
+          transform: none !important;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+  function addTilt() {
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+    if (reducedMotion) return;
+
+    $$(".case-cover").forEach((cover) => {
+      cover.addEventListener("pointermove", (event) => {
+        if (event.pointerType !== "mouse") return;
+
+        const rect = cover.getBoundingClientRect();
+        const x = (event.clientX - rect.left) / rect.width;
+        const y = (event.clientY - rect.top) / rect.height;
+
+        cover.style.transform =
+          `perspective(600px) rotateX(${(0.5 - y) * 3}deg) rotateY(${(x - 0.5) * 3}deg) translateY(-2px)`;
+      });
+
+      cover.addEventListener("pointerleave", () => {
+        cover.style.transform = "";
+      });
+    });
+  }
+
+  /* =======================================================
+     17. EVENTOS GERAIS
+     ======================================================= */
+
+  function installEvents() {
+    document.addEventListener("click", (event) => {
+      const cover = event.target.closest(".case-cover");
+
+      if (cover) {
+        const index = Number(cover.dataset.case);
+
+        if (Number.isInteger(index) && index >= 0 && index < CASES.length) {
+          openCase(index);
+        }
+
+        return;
+      }
+
+      const tab = event.target.closest("[data-open-case]");
+
+      if (tab) {
+        openCase(Number(tab.dataset.openCase));
+        return;
+      }
+
+      const actionButton = event.target.closest("[data-action]");
+
+      if (actionButton) {
+        handleAction(actionButton.dataset.action);
+      }
+    });
+
+    $("#copy-report")?.addEventListener("click", copyReport);
+  }
+
+  /* =======================================================
+     18. INICIALIZAÇÃO
+     ======================================================= */
+
+  async function init() {
+    loadLocalProgress();
+    installMotionStyles();
+    installEvents();
+    renderTabs();
+    renderOverview();
+    renderGrand();
+    addTilt();
+
+    await loadSupabaseData();
+
+    // Atualiza o estado visual depois de carregar o banco.
+    renderTabs();
+    renderGrand();
+
+    console.info("Detetives da Informação iniciado.", {
+      casos: CASES.length,
+      supabaseConfigurado: Boolean(supabaseClient),
+      squad: "ARMAGEDOM",
+      turma: "2BDEV"
+    });
+  }
+
+  init();
 })();
