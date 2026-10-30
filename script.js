@@ -758,10 +758,20 @@
   }
 
   function getTotalPoints() {
-    return state.remoteRecords.reduce(
+    // Soma os pontos de todos os participantes já registrados no squad.
+    const savedPoints = state.remoteRecords.reduce(
       (sum, record) => sum + (Number(record.pontos_obtidos) || 0),
       0
     );
+
+    // Também mantém no placar uma tentativa local caso o Supabase esteja indisponível.
+    // Resultados persistidos já estão em remoteRecords e não podem ser somados duas vezes.
+    const pendingPoints = Object.values(state.results).reduce(
+      (sum, result) => sum + (result?.persisted ? 0 : Number(result?.total) || 0),
+      0
+    );
+
+    return savedPoints + pendingPoints;
   }
 
   function renderGrand() {
@@ -807,7 +817,9 @@
     const casesMeter = $("#cases-meter");
     const reportsMeter = $("#reports-meter");
     const totalScore = $("#total-score");
+    const sessionPoints = $("#session-points");
 
+    if (sessionPoints) sessionPoints.textContent = `${points} pts`;
     if (casesCount) casesCount.textContent = `${completed}/${CASES.length}`;
     if (reportsCount) reportsCount.textContent = `${completed}/${CASES.length}`;
     if (casesMeter) casesMeter.style.width = `${percent}%`;
