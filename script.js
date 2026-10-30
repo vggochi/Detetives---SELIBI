@@ -15,9 +15,14 @@
   let currentSquad = null;
   let currentParticipant = "";
 
-  const SUPABASE_CONFIGURED =
-    typeof window.supabase !== "undefined" &&
-    typeof window.supabase.from === "function";
+  const supabaseClient =
+    typeof window.supabaseClient?.from === "function"
+      ? window.supabaseClient
+      : typeof window.supabase?.from === "function"
+        ? window.supabase
+        : null;
+
+  const SUPABASE_CONFIGURED = Boolean(supabaseClient);
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) =>
@@ -32,7 +37,7 @@
       "'": "&#39;"
     })[char]);
 
-  const supabaseClient = SUPABASE_CONFIGURED ? window.supabase : null;
+
 
   const STORAGE_KEY_PREFIX = "detetives-progresso-v2-";
   const getStorageKey = () =>
