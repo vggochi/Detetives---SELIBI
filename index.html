@@ -203,7 +203,7 @@
           <div class="field">
             <label for="create-squad-members">Participantes</label>
             <textarea id="create-squad-members" rows="3" placeholder="Digite um nome por linha ou separe por vírgula" required></textarea>
-            <span class="hint">O primeiro nome será usado como participante nesta sessão.</span>
+            <span class="hint">Cada participante pode ter até 200 caracteres. O primeiro nome será usado como participante nesta sessão.</span>
           </div>
           <div class="field">
             <label for="create-squad-description">Descrição (opcional)</label>
@@ -224,7 +224,7 @@
           </div>
           <div class="field">
             <label for="join-squad-member">Seu nome</label>
-            <input id="join-squad-member" type="text" maxlength="50" placeholder="Nome do participante" required>
+            <input id="join-squad-member" type="text" maxlength="200" placeholder="Nome do participante (até 200 caracteres)" required>
           </div>
           <button class="btn primary" type="submit">Entrar no squad</button>
           <div class="existing-squad-note">
@@ -702,6 +702,6 @@
   </footer>
 
 <script type="module" src="./supabase.js?v=20261030-6"></script>
-<script type="module" src="./script.js?v=20261030-14"></script>
+<script type="module" src="./script.js?v=20261030-15"></script>
 </body>
 </html>
