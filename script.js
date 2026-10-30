@@ -642,7 +642,7 @@
 
       return {
         saved: true,
-        message: `Pontuação atualizada: ${Number(data.pontos_obtidos) || 0} pontos salvos. Ranking geral atualizado.`
+        message: `Pontuação atualizada: ${Number(data.pontos_obtidos) || 0} pontos salvos e exibidos no topo da página.`
       };
     } catch (error) {
       console.error("Erro ao salvar investigação:", error);
