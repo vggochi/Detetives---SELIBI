@@ -172,6 +172,74 @@
 </head>
 
 <body>
+
+  <section class="squad-gate" id="squad-gate" aria-labelledby="squad-gate-title">
+    <div class="squad-gate-inner">
+      <a class="brand squad-gate-brand" href="#" aria-label="Detetives da Informação">
+        <img class="brand-logo" src="./logo.png" alt="">
+        <span>Detetives da Informação</span>
+      </a>
+
+      <div class="squad-gate-heading">
+        <span class="label">Central de equipes</span>
+        <h1 id="squad-gate-title">Entre para <span>investigar.</span></h1>
+        <p>Crie seu squad ou use um código de convite para continuar. Sem cadastro, e-mail ou senha.</p>
+      </div>
+
+      <div class="squad-gate-grid">
+        <form class="squad-panel" id="squad-create-form">
+          <span class="squad-number">01 / NOVA EQUIPE</span>
+          <h2>Criar squad</h2>
+          <p>Monte sua equipe e compartilhe o código com os participantes.</p>
+
+          <div class="field">
+            <label for="create-squad-name">Nome do squad</label>
+            <input id="create-squad-name" type="text" maxlength="50" placeholder="Ex.: ARMAGEDOM" required>
+          </div>
+          <div class="field">
+            <label for="create-squad-class">Turma</label>
+            <input id="create-squad-class" type="text" maxlength="30" placeholder="Ex.: 2BDEV" required>
+          </div>
+          <div class="field">
+            <label for="create-squad-members">Participantes</label>
+            <textarea id="create-squad-members" rows="3" placeholder="Digite um nome por linha ou separe por vírgula" required></textarea>
+            <span class="hint">O primeiro nome será usado como participante nesta sessão.</span>
+          </div>
+          <div class="field">
+            <label for="create-squad-description">Descrição (opcional)</label>
+            <input id="create-squad-description" type="text" maxlength="240" placeholder="Objetivo da equipe">
+          </div>
+          <button class="btn primary" type="submit">Criar squad e entrar</button>
+        </form>
+
+        <form class="squad-panel squad-panel-join" id="squad-join-form">
+          <span class="squad-number">02 / JÁ TEM CONVITE?</span>
+          <h2>Entrar em um squad</h2>
+          <p>Informe o código recebido e seu nome para registrar sua participação.</p>
+
+          <div class="squad-emblem" aria-hidden="true">↗</div>
+          <div class="field">
+            <label for="join-squad-code">Código de convite</label>
+            <input id="join-squad-code" type="text" maxlength="8" placeholder="Ex.: D771C790" autocomplete="off" required>
+          </div>
+          <div class="field">
+            <label for="join-squad-member">Seu nome</label>
+            <input id="join-squad-member" type="text" maxlength="50" placeholder="Nome do participante" required>
+          </div>
+          <button class="btn primary" type="submit">Entrar no squad</button>
+          <div class="existing-squad-note">
+            <strong>ARMAGEDOM · 2BDEV</strong>
+            <span>Convite disponível para a equipe existente.</span>
+            <code>D771C790</code>
+          </div>
+        </form>
+      </div>
+
+      <p class="squad-gate-status" id="squad-gate-status" role="status" aria-live="polite"></p>
+      <p class="squad-gate-foot">ACESSO POR CÓDIGO • SEM CONTAS INDIVIDUAIS • PROGRESSO SALVO NO SUPABASE</p>
+    </div>
+  </section>
+
   <a class="skip" href="#conteudo">Pular para o conteúdo</a>
 
   <header class="top">
@@ -189,6 +257,12 @@
         <a href="#ranking">Ranking</a>
       </nav>
 
+      <div class="squad-session" id="squad-session" hidden>
+        <span><strong id="session-squad-name">Squad</strong><small id="session-participant">Participante</small></span>
+        <span class="session-code">CONVITE <b id="session-invite-code">--------</b></span>
+        <button class="btn sm" id="copy-invite-code" type="button">Copiar código</button>
+        <button class="btn sm" id="leave-squad" type="button">Sair</button>
+      </div>
       <a class="btn sm primary" href="#casos">Investigar</a>
     </div>
   </header>
@@ -670,11 +744,12 @@
       </div>
 
       <div class="team-footer">
-        <img src="./logo-armagedom.png" alt="Logo do squad Armagedom" loading="lazy">
+        <img id="footer-squad-logo" src="./logo-armagedom.png" alt="Logo do squad Armagedom" loading="lazy">
         <div class="team-info">
-          <strong>Armagedom</strong>
-          <span>Squad de desenvolvimento</span>
-          <span>Turma 2BDEV</span>
+          <strong id="footer-squad-name">Squad</strong>
+          <span>Equipe de investigação</span>
+          <span id="footer-squad-class">Turma</span>
+          <span id="footer-squad-participants">Participantes</span>
         </div>
       </div>
     </div>
