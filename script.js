@@ -592,11 +592,14 @@
       };
       state.completed.add(item.id);
       saveLocalProgress();
+
+      // Reconsulta o banco para atualizar o ranking geral com os dados oficiais.
+      await loadSupabaseData();
       renderGrand();
 
       return {
         saved: true,
-        message: `Resultado anterior recuperado: ${Number(previousRecord.pontos_obtidos) || 0} pontos. A pontuação não foi duplicada.`
+        message: `Resultado anterior recuperado: ${Number(previousRecord.pontos_obtidos) || 0} pontos. O ranking foi atualizado sem duplicar a pontuação.`
       };
     }
 
@@ -632,22 +635,16 @@
       }
 
       state.remoteRecords.push(data);
-
-      const rankingRow = state.rankingRows.find(
-        (row) => row.id === currentSquad.id
-      );
-      if (rankingRow) {
-        rankingRow.pontos += Number(data.pontos_obtidos) || 0;
-        rankingRow.missoes.add(data.missao_id);
-        rankingRow.concluidas = rankingRow.missoes.size;
-      }
-
       saveLocalProgress();
+
+      // Recarrega squads e investigações concluídas para recalcular a classificação
+      // de todos os squads, reordenar as posições e refletir o resultado recém-salvo.
+      await loadSupabaseData();
       renderGrand();
 
       return {
         saved: true,
-        message: `Pontuação atualizada: ${Number(data.pontos_obtidos) || 0} pontos salvos no Supabase.`
+        message: `Pontuação atualizada: ${Number(data.pontos_obtidos) || 0} pontos salvos. Ranking geral atualizado.`
       };
     } catch (error) {
       console.error("Erro ao salvar investigação:", error);
