@@ -606,13 +606,36 @@
       };
     }
 
-    const mission = findMissionForCase(item);
+    let mission = findMissionForCase(item);
+
+    // Recupera a missão diretamente do banco caso a lista local não tenha carregado.
+    if (!mission) {
+      const slug = MISSION_SLUGS[item.id];
+      const missionResult = await supabaseClient
+        .from("missoes")
+        .select("id, slug, titulo, dificuldade, pontos, ativo")
+        .eq("slug", slug)
+        .maybeSingle();
+
+      if (missionResult.error) {
+        console.error("[Detetives] Erro ao localizar missão:", missionResult.error);
+        return {
+          saved: false,
+          message: "Não foi possível localizar a missão no Supabase: " + missionResult.error.message
+        };
+      }
+
+      mission = missionResult.data;
+      if (mission && !state.missions.some((entry) => entry.id === mission.id)) {
+        state.missions.push(mission);
+      }
+    }
 
     if (!mission) {
       return {
         saved: false,
-        message:
-          "Resultado calculado, mas não foi encontrada uma missão correspondente no Supabase."
+        message: "Missão não encontrada no banco. Confira se o slug " +
+          MISSION_SLUGS[item.id] + " existe na tabela missoes."
       };
     }
 
@@ -1296,7 +1319,7 @@
           <p>${esc(item.explanation)}</p>
         </div>
 
-        <p class="hint" role="status">${esc(persistedMessage)}</p>
+        <p class="hint" id="save-status" role="status" aria-live="polite">${esc(persistedMessage)}</p>
 
         <div class="cta">
           <button class="btn primary" type="button" data-action="review">
@@ -1372,10 +1395,30 @@
     // Mostra o resultado imediatamente; o banco é salvo em seguida.
     await renderResult(result, "Calculando e salvando pontuação…");
 
-    const saveStatus = await saveInvestigation(item, result);
+    let saveStatus;
+    try {
+      console.info("[Detetives] Enviando investigação ao Supabase:", {
+        squadId: currentSquad?.id,
+        participante: currentParticipant,
+        caso: item.id,
+        pontos: result.total
+      });
+      saveStatus = await saveInvestigation(item, result);
+    } catch (error) {
+      console.error("[Detetives] Falha inesperada ao salvar investigação:", error);
+      saveStatus = {
+        saved: false,
+        message: "Erro inesperado ao salvar: " + (error?.message || "verifique o console")
+      };
+    }
 
-    const status = $("#case .result .hint");
-    if (status) status.textContent = saveStatus.message;
+    const status = $("#save-status");
+    if (status) {
+      status.textContent = saveStatus.message;
+      status.dataset.saved = String(Boolean(saveStatus.saved));
+    } else {
+      console.error("[Detetives] Elemento #save-status não encontrado. Mensagem:", saveStatus.message);
+    }
 
     if (saveStatus.saved) {
       state.results[item.id].persisted = true;
