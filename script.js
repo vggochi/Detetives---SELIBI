@@ -391,7 +391,6 @@
     saving: false,
     error: "",
     startedAt: null,
-    rankingRows: []
   };
 
   /* =======================================================
@@ -435,73 +434,6 @@
   /* =======================================================
      5. SUPABASE
      ======================================================= */
-
-  async function fetchAllPages(queryFactory, pageSize = 1000) {
-    const rows = [];
-    let from = 0;
-
-    while (true) {
-      const { data, error } = await queryFactory().range(from, from + pageSize - 1);
-      if (error) throw error;
-
-      const page = data || [];
-      rows.push(...page);
-
-      if (page.length < pageSize) break;
-      from += pageSize;
-    }
-
-    return rows;
-  }
-
-  async function loadRankingData() {
-    const status = $("#ranking-status");
-    const refreshButton = $("#refresh-ranking");
-
-    if (!supabaseClient) {
-      if (status) status.textContent = "Conexão com o Supabase indisponível.";
-      renderRanking();
-      return;
-    }
-
-    if (refreshButton) {
-      refreshButton.disabled = true;
-      refreshButton.textContent = "Atualizando...";
-    }
-    if (status) status.textContent = "Sincronizando pontuações com o Supabase...";
-
-    try {
-      const { data: rankingData, error: rankingError } = await supabaseClient
-        .from("ranking_squads")
-        .select("squad_id, nome, turma, pontos, missoes_concluidas, atualizado_em")
-        .order("pontos", { ascending: false })
-        .order("nome", { ascending: true });
-
-      if (rankingError) throw rankingError;
-
-      state.rankingRows = (rankingData || []).map((row) => ({
-        id: row.squad_id,
-        nome: row.nome,
-        turma: row.turma,
-        pontos: Number(row.pontos) || 0,
-        concluidas: Number(row.missoes_concluidas) || 0
-      }));
-
-      if (status) {
-        const now = new Date();
-        status.textContent = `Placar sincronizado • ${state.rankingRows.length} squads • atualizado às ${now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
-      }
-    } catch (error) {
-      console.error("Erro ao atualizar o placar:", error);
-      if (status) status.textContent = `Não foi possível atualizar o placar: ${error.message || "verifique as permissões de leitura do Supabase"}`;
-    } finally {
-      if (refreshButton) {
-        refreshButton.disabled = false;
-        refreshButton.textContent = "Atualizar placar";
-      }
-      renderRanking();
-    }
-  }
 
   async function loadSupabaseData() {
     if (!supabaseClient || !currentSquad) return;
@@ -570,7 +502,6 @@
         "Não foi possível carregar o histórico do banco. O jogo continua disponível; confira as políticas RLS e a conexão.";
     } finally {
       state.loading = false;
-      await loadRankingData();
       renderGrand();
     }
   }
@@ -905,7 +836,6 @@
     if (totalScore) totalScore.textContent = String(points);
 
     updateChecklist();
-    renderRanking();
   }
 
   function updateChecklist() {
@@ -926,48 +856,6 @@
 
       if (listItem) listItem.classList.toggle("done", done);
     });
-  }
-
-  function renderRanking() {
-    const body = $("#rank-body");
-    const rankingScore = $("#ranking-score");
-
-    if (rankingScore) {
-      rankingScore.textContent = String(getTotalPoints());
-    }
-
-    if (!body) return;
-
-    const rows = state.rankingRows || [];
-
-    if (!rows.length) {
-      body.innerHTML = `
-        <tr>
-          <td colspan="4" class="rank-empty">
-            Nenhum squad com pontuação cadastrada ainda. Seja o primeiro a investigar!
-          </td>
-        </tr>
-      `;
-      return;
-    }
-
-    const maxPoints = Math.max(100, ...rows.map((row) => Number(row.pontos) || 0));
-    body.innerHTML = rows.map((row, index) => `
-      <tr class="${index === 0 ? "first" : ""}">
-        <td class="pos">${String(index + 1).padStart(2, "0")}</td>
-        <td>
-          <div class="nm">${esc(row.nome)}</div>
-          <small>${esc(row.turma || "")}</small>
-        </td>
-        <td>
-          <div class="pts">
-            <span>${Number(row.pontos) || 0} pontos</span>
-            <i style="--w:${Math.min(100, ((Number(row.pontos) || 0) / maxPoints) * 100)}%"></i>
-          </div>
-        </td>
-        <td>${Number(row.concluidas) || 0}</td>
-      </tr>
-    `).join("");
   }
 
   /* =======================================================
@@ -1684,7 +1572,6 @@
     });
 
     $("#copy-report")?.addEventListener("click", copyReport);
-    $("#refresh-ranking")?.addEventListener("click", loadRankingData);
   }
 
 
@@ -1738,7 +1625,6 @@
     state.results = {};
     state.completed = new Set();
     state.remoteRecords = [];
-    state.rankingRows = [];
     state.error = "";
   }
 
@@ -1886,10 +1772,8 @@
     state.results = {};
     state.completed = new Set();
     state.remoteRecords = [];
-    state.rankingRows = [];
     state.error = "";
     showGateMessage("Você saiu do squad. O progresso continua salvo no banco de dados.");
-    loadRankingData();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -1941,7 +1825,6 @@
       document.body.classList.remove("squad-ready");
       $("#squad-gate").hidden = false;
       renderTabs();
-      await loadRankingData();
     }
 
     console.info("Detetives da Informação iniciado.", {
