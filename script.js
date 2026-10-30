@@ -11,7 +11,9 @@
      1. CONFIGURAÇÃO
      ======================================================= */
 
-  const SQUAD_ID = "3638316e-d5ef-48a5-9426-7eb49b7ac0e6";
+  const SESSION_KEY = "detetives-squad-session-v1";
+  let currentSquad = null;
+  let currentParticipant = "";
 
   const SUPABASE_CONFIGURED =
     typeof window.supabase !== "undefined" &&
@@ -32,7 +34,7 @@
 
   const supabaseClient = SUPABASE_CONFIGURED ? window.supabase : null;
 
-  const STORAGE_KEY = "detetives-armagedom-progresso-v1";
+  const STORAGE_KEY_PREFIX = "detetives-progresso-v2-";
 
   /* =======================================================
      2. CASOS EDUCACIONAIS
@@ -377,7 +379,8 @@
     loading: false,
     saving: false,
     error: "",
-    startedAt: null
+    startedAt: null,
+    rankingRows: []
   };
 
   /* =======================================================
@@ -386,7 +389,8 @@
 
   function loadLocalProgress() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!currentSquad) return;
+      const raw = localStorage.getItem(STORAGE_KEY_PREFIX + currentSquad.id);
       if (!raw) return;
 
       const saved = JSON.parse(raw);
@@ -406,7 +410,7 @@
   function saveLocalProgress() {
     try {
       localStorage.setItem(
-        STORAGE_KEY,
+        STORAGE_KEY_PREFIX + currentSquad.id,
         JSON.stringify({
           results: state.results,
           completed: [...state.completed]
@@ -422,18 +426,13 @@
      ======================================================= */
 
   async function loadSupabaseData() {
-    if (!supabaseClient) {
-      console.warn(
-        "Supabase não configurado. O jogo continuará funcionando localmente."
-      );
-      return;
-    }
+    if (!supabaseClient || !currentSquad) return;
 
     state.loading = true;
     renderGrand();
 
     try {
-      const [missionsResult, investigationsResult] = await Promise.all([
+      const [missionsResult, investigationsResult, squadsResult, allRecordsResult] = await Promise.all([
         supabaseClient
           .from("missoes")
           .select("id, slug, titulo, dificuldade, pontos, ativo")
@@ -444,15 +443,46 @@
           .select(
             "id, squad_id, missao_id, nome_jogador, resposta, correta, pontos_obtidos, concluida, iniciada_em, concluida_em"
           )
-          .eq("squad_id", SQUAD_ID)
+          .eq("squad_id", currentSquad.id)
+          .eq("concluida", true),
+
+        supabaseClient
+          .from("squads")
+          .select("id, nome, turma"),
+
+        supabaseClient
+          .from("investigacoes")
+          .select("squad_id, missao_id, pontos_obtidos, concluida")
           .eq("concluida", true)
       ]);
 
       if (missionsResult.error) throw missionsResult.error;
       if (investigationsResult.error) throw investigationsResult.error;
+      if (squadsResult.error) throw squadsResult.error;
+      if (allRecordsResult.error) throw allRecordsResult.error;
 
       state.missions = missionsResult.data || [];
       state.remoteRecords = investigationsResult.data || [];
+
+      const rankingMap = new Map();
+      (squadsResult.data || []).forEach((squad) => {
+        rankingMap.set(squad.id, {
+          id: squad.id,
+          nome: squad.nome,
+          turma: squad.turma,
+          pontos: 0,
+          missoes: new Set()
+        });
+      });
+      (allRecordsResult.data || []).forEach((record) => {
+        const row = rankingMap.get(record.squad_id);
+        if (!row) return;
+        row.pontos += Number(record.pontos_obtidos) || 0;
+        if (record.missao_id) row.missoes.add(record.missao_id);
+      });
+      state.rankingRows = [...rankingMap.values()]
+        .map((row) => ({ ...row, concluidas: row.missoes.size }))
+        .sort((a, b) => b.pontos - a.pontos || a.nome.localeCompare(b.nome));
 
       // Sincroniza o histórico persistido com os indicadores.
       state.remoteRecords.forEach((record) => {
@@ -473,7 +503,10 @@
         state.completed.add(matchingCase.id);
 
         // Preserva um resultado local mais recente, se já existir.
-        if (!state.results[matchingCase.id]) {
+        if (
+          record.nome_jogador === currentParticipant &&
+          !state.results[matchingCase.id]
+        ) {
           state.results[matchingCase.id] = {
             total: Number(record.pontos_obtidos) || 0,
             verdict: record.resposta || "",
@@ -517,11 +550,34 @@
       };
     }
 
+    const existingResult = await supabaseClient
+      .from("investigacoes")
+      .select("id")
+      .eq("squad_id", currentSquad.id)
+      .eq("missao_id", mission.id)
+      .eq("nome_jogador", currentParticipant)
+      .eq("concluida", true)
+      .limit(1);
+
+    if (existingResult.error) {
+      return {
+        saved: false,
+        message: "Não foi possível verificar se este participante já concluiu a missão."
+      };
+    }
+
+    if (existingResult.data?.length) {
+      return {
+        saved: false,
+        message: "Este participante já concluiu este caso. O resultado anterior foi mantido para evitar pontuação duplicada."
+      };
+    }
+
     const payload = {
-      squad_id: SQUAD_ID,
+      squad_id: currentSquad.id,
       missao_id: mission.id,
       noticia_id: null,
-      nome_jogador: "Investigador ARMAGEDOM",
+      nome_jogador: currentParticipant,
       resposta: VERDICTS[result.verdict] || result.verdict,
       correta: result.correct,
       pontos_obtidos: result.total,
@@ -670,8 +726,8 @@
   }
 
   function getTotalPoints() {
-    return Object.values(state.results).reduce(
-      (sum, result) => sum + (Number(result.total) || 0),
+    return state.remoteRecords.reduce(
+      (sum, record) => sum + (Number(record.pontos_obtidos) || 0),
       0
     );
   }
@@ -763,22 +819,33 @@
     const points = getTotalPoints();
     const completed = getCompletedCount();
 
-    body.innerHTML = `
-      <tr class="${points > 0 ? "first" : ""}">
-        <td class="pos">01</td>
+    const rows = state.rankingRows.length
+      ? state.rankingRows
+      : [{
+          id: currentSquad?.id,
+          nome: currentSquad?.nome || "Squad",
+          turma: currentSquad?.turma || "",
+          pontos: points,
+          concluidas: completed
+        }];
+
+    const maxPoints = Math.max(100, ...rows.map((row) => row.pontos));
+    body.innerHTML = rows.map((row, index) => `
+      <tr class="${index === 0 ? "first" : ""}">
+        <td class="pos">${String(index + 1).padStart(2, "0")}</td>
         <td>
-          <div class="nm">ARMAGEDOM</div>
-          <small>Turma 2BDEV</small>
+          <div class="nm">${esc(row.nome)}</div>
+          <small>${esc(row.turma || "")}</small>
         </td>
         <td>
           <div class="pts">
-            <span>${points} pontos</span>
-            <i style="--w:${Math.min(100, points / 10)}%"></i>
+            <span>${Number(row.pontos) || 0} pontos</span>
+            <i style="--w:${Math.min(100, (Number(row.pontos) / maxPoints) * 100)}%"></i>
           </div>
         </td>
-        <td>${completed}/${CASES.length}</td>
+        <td>${Number(row.concluidas) || 0}</td>
       </tr>
-    `;
+    `).join("");
   }
 
   /* =======================================================
@@ -1221,7 +1288,7 @@
     container.innerHTML = `
       <div class="result">
         <span class="chip">Arquivo encerrado</span>
-        <h3>Relatório da equipe ARMAGEDOM</h3>
+        <h3>Relatório do squad ${esc(currentSquad?.nome || "")}</h3>
         <p>
           Você concluiu ${completed} de ${CASES.length} casos e acumulou
           ${points} pontos nos resultados disponíveis neste navegador.
@@ -1231,7 +1298,7 @@
           <div>
             <span>Pontuação total</span>
             <br>
-            <small>Turma 2BDEV</small>
+            <small>Turma ${esc(currentSquad?.turma || "")}</small>
           </div>
           <b>${points}</b>
         </div>
@@ -1473,30 +1540,256 @@
     $("#copy-report")?.addEventListener("click", copyReport);
   }
 
+
   /* =======================================================
-     18. INICIALIZAÇÃO
+     18. SQUADS — CRIAÇÃO, ENTRADA E SESSÃO
      ======================================================= */
 
-  async function init() {
+  function showGateMessage(message, isError = false) {
+    const status = $("#squad-gate-status");
+    if (!status) return;
+    status.textContent = message;
+    status.classList.toggle("is-error", isError);
+  }
+
+  function setSquadSession(squad, participant) {
+    currentSquad = squad;
+    currentParticipant = participant;
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+      squadId: squad.id,
+      participant
+    }));
+    document.body.classList.add("squad-ready");
+    $("#squad-gate").hidden = true;
+    $("#squad-session")?.removeAttribute("hidden");
+
+    const sessionName = $("#session-squad-name");
+    const sessionParticipant = $("#session-participant");
+    const inviteCode = $("#session-invite-code");
+    if (sessionName) sessionName.textContent = squad.nome;
+    if (sessionParticipant) sessionParticipant.textContent = participant;
+    if (inviteCode) inviteCode.textContent = squad.codigo_convite || "—";
+
+    const footerName = $("#footer-squad-name");
+    const footerClass = $("#footer-squad-class");
+    const footerParticipants = $("#footer-squad-participants");
+    if (footerName) footerName.textContent = squad.nome;
+    if (footerClass) footerClass.textContent = "Turma " + squad.turma;
+    if (footerParticipants) {
+      const names = Array.isArray(squad.participantes) ? squad.participantes : [];
+      footerParticipants.textContent = names.length
+        ? names.join(" • ")
+        : "Participantes ainda não cadastrados";
+    }
+    const footerLogo = $("#footer-squad-logo");
+    if (footerLogo) footerLogo.hidden = squad.nome.toUpperCase() !== "ARMAGEDOM";
+
+    state.current = 0;
+    state.answers = {};
+    state.verdict = "";
+    state.justification = "";
+    state.results = {};
+    state.completed = new Set();
+    state.remoteRecords = [];
+    state.rankingRows = [];
+    state.error = "";
+  }
+
+  async function enterSquad(squad, participant) {
+    setSquadSession(squad, participant);
     loadLocalProgress();
-    installMotionStyles();
-    installEvents();
     renderTabs();
     renderOverview();
     renderGrand();
-    addTilt();
-
+    showGateMessage("");
     await loadSupabaseData();
-
-    // Atualiza o estado visual depois de carregar o banco.
     renderTabs();
     renderGrand();
+  }
+
+  async function restoreSquadSession() {
+    if (!supabaseClient) return false;
+
+    let saved;
+    try {
+      saved = JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null");
+    } catch {
+      sessionStorage.removeItem(SESSION_KEY);
+      return false;
+    }
+
+    if (!saved?.squadId || !saved?.participant) return false;
+
+    const { data, error } = await supabaseClient
+      .from("squads")
+      .select("id, nome, turma, descricao, codigo_convite, participantes")
+      .eq("id", saved.squadId)
+      .maybeSingle();
+
+    if (error || !data) {
+      sessionStorage.removeItem(SESSION_KEY);
+      return false;
+    }
+
+    currentSquad = data;
+    currentParticipant = saved.participant;
+    await enterSquad(data, saved.participant);
+    return true;
+  }
+
+  async function handleCreateSquad(event) {
+    event.preventDefault();
+    if (!supabaseClient) {
+      showGateMessage("Supabase não está configurado. Confira supabase.js.", true);
+      return;
+    }
+
+    const form = event.currentTarget;
+    const nome = $("#create-squad-name", form)?.value.trim() || "";
+    const turma = $("#create-squad-class", form)?.value.trim() || "";
+    const descricao = $("#create-squad-description", form)?.value.trim() || "";
+    const rawNames = $("#create-squad-members", form)?.value || "";
+    const participantes = [...new Set(
+      rawNames.split(/[\\n,;]+/).map((name) => name.trim()).filter(Boolean)
+    )];
+
+    if (nome.length < 2 || nome.length > 50 || turma.length < 1 || turma.length > 30) {
+      showGateMessage("Informe um nome de squad (2–50 caracteres) e uma turma (1–30 caracteres).", true);
+      return;
+    }
+    if (!participantes.length || participantes.some((name) => name.length < 2 || name.length > 50)) {
+      showGateMessage("Informe pelo menos um participante, com nome entre 2 e 50 caracteres.", true);
+      return;
+    }
+
+    const submit = $('button[type="submit"]', form);
+    if (submit) { submit.disabled = true; submit.textContent = "Criando squad…"; }
+
+    try {
+      const { data, error } = await supabaseClient
+        .from("squads")
+        .insert({ nome, turma, descricao, participantes })
+        .select("id, nome, turma, descricao, codigo_convite, participantes")
+        .single();
+
+      if (error) throw error;
+      form.reset();
+      await enterSquad(data, participantes[0]);
+    } catch (error) {
+      console.error("Erro ao criar squad:", error);
+      showGateMessage(error.message || "Não foi possível criar o squad. Confira as políticas RLS.", true);
+    } finally {
+      if (submit) { submit.disabled = false; submit.textContent = "Criar squad e entrar"; }
+    }
+  }
+
+  async function handleJoinSquad(event) {
+    event.preventDefault();
+    if (!supabaseClient) {
+      showGateMessage("Supabase não está configurado. Confira supabase.js.", true);
+      return;
+    }
+
+    const form = event.currentTarget;
+    const code = $("#join-squad-code", form)?.value.trim().toUpperCase() || "";
+    const participant = $("#join-squad-member", form)?.value.trim() || "";
+
+    if (code.length < 6 || participant.length < 2 || participant.length > 50) {
+      showGateMessage("Informe um código válido e um nome de participante entre 2 e 50 caracteres.", true);
+      return;
+    }
+
+    const submit = $('button[type="submit"]', form);
+    if (submit) { submit.disabled = true; submit.textContent = "Verificando código…"; }
+
+    try {
+      const { data, error } = await supabaseClient.rpc("entrar_squad", {
+        p_codigo: code,
+        p_participante: participant
+      });
+
+      if (error) throw error;
+      const joined = Array.isArray(data) ? data[0] : data;
+      if (!joined?.id) throw new Error("O código não retornou um squad válido.");
+
+      const { data: squad, error: squadError } = await supabaseClient
+        .from("squads")
+        .select("id, nome, turma, descricao, codigo_convite, participantes")
+        .eq("id", joined.id)
+        .single();
+
+      if (squadError) throw squadError;
+      form.reset();
+      await enterSquad(squad, participant);
+    } catch (error) {
+      console.error("Erro ao entrar no squad:", error);
+      showGateMessage(error.message || "Não foi possível entrar. Confira o código e tente novamente.", true);
+    } finally {
+      if (submit) { submit.disabled = false; submit.textContent = "Entrar no squad"; }
+    }
+  }
+
+  function leaveSquad() {
+    sessionStorage.removeItem(SESSION_KEY);
+    currentSquad = null;
+    currentParticipant = "";
+    document.body.classList.remove("squad-ready");
+    $("#squad-gate").hidden = false;
+    $("#squad-session")?.setAttribute("hidden", "");
+    state.results = {};
+    state.completed = new Set();
+    state.remoteRecords = [];
+    state.rankingRows = [];
+    state.error = "";
+    showGateMessage("Você saiu do squad. O progresso continua salvo no banco de dados.");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function installSquadEvents() {
+    $("#squad-create-form")?.addEventListener("submit", handleCreateSquad);
+    $("#squad-join-form")?.addEventListener("submit", handleJoinSquad);
+    $("#leave-squad")?.addEventListener("click", leaveSquad);
+
+    $("#copy-invite-code")?.addEventListener("click", async () => {
+      const code = currentSquad?.codigo_convite || "";
+      if (!code) return;
+      try {
+        await navigator.clipboard.writeText(code);
+        $("#copy-invite-code").textContent = "Código copiado!";
+      } catch {
+        showGateMessage("Seu código de convite é: " + code);
+      }
+    });
+  }
+
+
+  /* =======================================================
+     19. INICIALIZAÇÃO
+     ======================================================= */
+
+  async function init() {
+    installMotionStyles();
+    installEvents();
+    installSquadEvents();
+    addTilt();
+
+    if (!supabaseClient) {
+      showGateMessage("Não foi possível conectar ao Supabase. Confira a configuração em supabase.js.", true);
+      return;
+    }
+
+    const restored = await restoreSquadSession();
+    if (!restored) {
+      document.body.classList.remove("squad-ready");
+      $("#squad-gate").hidden = false;
+      renderTabs();
+    }
 
     console.info("Detetives da Informação iniciado.", {
       casos: CASES.length,
       supabaseConfigurado: Boolean(supabaseClient),
-      squad: "ARMAGEDOM",
-      turma: "2BDEV"
+      squad: currentSquad?.nome || null,
+      turma: currentSquad?.turma || null
     });
   }
 
