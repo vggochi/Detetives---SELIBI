@@ -436,6 +436,91 @@
      5. SUPABASE
      ======================================================= */
 
+  async function fetchAllPages(queryFactory, pageSize = 1000) {
+    const rows = [];
+    let from = 0;
+
+    while (true) {
+      const { data, error } = await queryFactory().range(from, from + pageSize - 1);
+      if (error) throw error;
+
+      const page = data || [];
+      rows.push(...page);
+
+      if (page.length < pageSize) break;
+      from += pageSize;
+    }
+
+    return rows;
+  }
+
+  async function loadRankingData() {
+    const status = $("#ranking-status");
+    const refreshButton = $("#refresh-ranking");
+
+    if (!supabaseClient) {
+      if (status) status.textContent = "Conexão com o Supabase indisponível.";
+      renderRanking();
+      return;
+    }
+
+    if (refreshButton) {
+      refreshButton.disabled = true;
+      refreshButton.textContent = "Atualizando...";
+    }
+    if (status) status.textContent = "Sincronizando pontuações com o Supabase...";
+
+    try {
+      const [squads, records] = await Promise.all([
+        fetchAllPages(() =>
+          supabaseClient.from("squads").select("id, nome, turma")
+        ),
+        fetchAllPages(() =>
+          supabaseClient
+            .from("investigacoes")
+            .select("squad_id, missao_id, pontos_obtidos, concluida")
+            .eq("concluida", true)
+        )
+      ]);
+
+      const rankingMap = new Map();
+      squads.forEach((squad) => {
+        rankingMap.set(squad.id, {
+          id: squad.id,
+          nome: squad.nome,
+          turma: squad.turma,
+          pontos: 0,
+          missoes: new Set()
+        });
+      });
+
+      records.forEach((record) => {
+        const row = rankingMap.get(record.squad_id);
+        if (!row) return;
+        row.pontos += Number(record.pontos_obtidos) || 0;
+        if (record.missao_id) row.missoes.add(record.missao_id);
+      });
+
+      state.rankingRows = [...rankingMap.values()]
+        .map((row) => ({ ...row, concluidas: row.missoes.size }))
+        .sort((a, b) => b.pontos - a.pontos || a.nome.localeCompare(b.nome));
+
+      if (status) {
+        const now = new Date();
+        status.textContent = `Placar sincronizado • ${state.rankingRows.length} squads • atualizado às ${now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar o placar:", error);
+      if (status) status.textContent = `Não foi possível atualizar o placar: ${error.message || "verifique as permissões de leitura do Supabase"}`;
+    } finally {
+      if (refreshButton) {
+        refreshButton.disabled = false;
+        refreshButton.textContent = "Atualizar placar";
+      }
+      renderRanking();
+    }
+  }
+
   async function loadSupabaseData() {
     if (!supabaseClient || !currentSquad) return;
 
@@ -443,7 +528,7 @@
     renderGrand();
 
     try {
-      const [missionsResult, investigationsResult, squadsResult, allRecordsResult] = await Promise.all([
+      const [missionsResult, investigationsResult] = await Promise.all([
         supabaseClient
           .from("missoes")
           .select("id, slug, titulo, dificuldade, pontos, ativo")
@@ -455,45 +540,14 @@
             "id, squad_id, missao_id, nome_jogador, resposta, correta, pontos_obtidos, concluida, iniciada_em, concluida_em"
           )
           .eq("squad_id", currentSquad.id)
-          .eq("concluida", true),
-
-        supabaseClient
-          .from("squads")
-          .select("id, nome, turma"),
-
-        supabaseClient
-          .from("investigacoes")
-          .select("squad_id, missao_id, pontos_obtidos, concluida")
           .eq("concluida", true)
       ]);
 
       if (missionsResult.error) throw missionsResult.error;
       if (investigationsResult.error) throw investigationsResult.error;
-      if (squadsResult.error) throw squadsResult.error;
-      if (allRecordsResult.error) throw allRecordsResult.error;
 
       state.missions = missionsResult.data || [];
       state.remoteRecords = investigationsResult.data || [];
-
-      const rankingMap = new Map();
-      (squadsResult.data || []).forEach((squad) => {
-        rankingMap.set(squad.id, {
-          id: squad.id,
-          nome: squad.nome,
-          turma: squad.turma,
-          pontos: 0,
-          missoes: new Set()
-        });
-      });
-      (allRecordsResult.data || []).forEach((record) => {
-        const row = rankingMap.get(record.squad_id);
-        if (!row) return;
-        row.pontos += Number(record.pontos_obtidos) || 0;
-        if (record.missao_id) row.missoes.add(record.missao_id);
-      });
-      state.rankingRows = [...rankingMap.values()]
-        .map((row) => ({ ...row, concluidas: row.missoes.size }))
-        .sort((a, b) => b.pontos - a.pontos || a.nome.localeCompare(b.nome));
 
       // Sincroniza o histórico persistido com os indicadores.
       state.remoteRecords.forEach((record) => {
@@ -534,6 +588,7 @@
         "Não foi possível carregar o histórico do banco. O jogo continua disponível; confira as políticas RLS e a conexão.";
     } finally {
       state.loading = false;
+      await loadRankingData();
       renderGrand();
     }
   }
@@ -871,20 +926,20 @@
 
     if (!body) return;
 
-    const points = getTotalPoints();
-    const completed = getCompletedCount();
+    const rows = state.rankingRows || [];
 
-    const rows = state.rankingRows.length
-      ? state.rankingRows
-      : [{
-          id: currentSquad?.id,
-          nome: currentSquad?.nome || "Squad",
-          turma: currentSquad?.turma || "",
-          pontos: points,
-          concluidas: completed
-        }];
+    if (!rows.length) {
+      body.innerHTML = `
+        <tr>
+          <td colspan="4" class="rank-empty">
+            Nenhum squad com pontuação cadastrada ainda. Seja o primeiro a investigar!
+          </td>
+        </tr>
+      `;
+      return;
+    }
 
-    const maxPoints = Math.max(100, ...rows.map((row) => row.pontos));
+    const maxPoints = Math.max(100, ...rows.map((row) => Number(row.pontos) || 0));
     body.innerHTML = rows.map((row, index) => `
       <tr class="${index === 0 ? "first" : ""}">
         <td class="pos">${String(index + 1).padStart(2, "0")}</td>
@@ -895,7 +950,7 @@
         <td>
           <div class="pts">
             <span>${Number(row.pontos) || 0} pontos</span>
-            <i style="--w:${Math.min(100, (Number(row.pontos) / maxPoints) * 100)}%"></i>
+            <i style="--w:${Math.min(100, ((Number(row.pontos) || 0) / maxPoints) * 100)}%"></i>
           </div>
         </td>
         <td>${Number(row.concluidas) || 0}</td>
@@ -1597,6 +1652,7 @@
     });
 
     $("#copy-report")?.addEventListener("click", copyReport);
+    $("#refresh-ranking")?.addEventListener("click", loadRankingData);
   }
 
 
@@ -1801,6 +1857,7 @@
     state.rankingRows = [];
     state.error = "";
     showGateMessage("Você saiu do squad. O progresso continua salvo no banco de dados.");
+    loadRankingData();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -1852,6 +1909,7 @@
       document.body.classList.remove("squad-ready");
       $("#squad-gate").hidden = false;
       renderTabs();
+      await loadRankingData();
     }
 
     console.info("Detetives da Informação iniciado.", {
