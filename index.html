@@ -258,10 +258,18 @@
       </nav>
 
       <div class="squad-session" id="squad-session" hidden>
-        <span><strong id="session-squad-name">Squad</strong><small id="session-participant">Participante</small></span>
-        <span class="session-code">CONVITE <b id="session-invite-code">--------</b></span>
-        <button class="btn sm" id="copy-invite-code" type="button">Copiar código</button>
-        <button class="btn sm" id="leave-squad" type="button">Sair</button>
+        <div class="session-identity">
+          <strong id="session-squad-name">Squad</strong>
+          <small id="session-participant">Participante</small>
+        </div>
+        <div class="session-details">
+          <span class="session-code">CONVITE <b id="session-invite-code">--------</b></span>
+          <span class="session-points">PONTUAÇÃO <b id="session-points">0 pts</b></span>
+        </div>
+        <div class="session-actions">
+          <button class="btn sm" id="copy-invite-code" type="button">Copiar convite</button>
+          <button class="btn sm" id="leave-squad" type="button">Sair do squad</button>
+        </div>
       </div>
       <a class="btn sm primary" href="#casos">Investigar</a>
     </div>
