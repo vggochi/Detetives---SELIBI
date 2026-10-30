@@ -364,10 +364,13 @@
     i: "Inconclusiva"
   };
 
+  // Cada caso precisa de uma missão exclusiva no Supabase.
   const MISSION_SLUGS = {
-    "Iniciante": "detetive-de-fontes",
-    "Intermediário": "pistas-em-conflito",
-    "Avançado": "relatorio-final"
+    ciclovias: "caso-ciclovias",
+    cha: "caso-cha",
+    escola: "caso-escola",
+    desemprego: "caso-desemprego",
+    espelhos: "caso-espelhos"
   };
 
   /* =======================================================
@@ -503,7 +506,7 @@
         if (!mission) return;
 
         const matchingCase = CASES.find((item) => {
-          return MISSION_SLUGS[item.difficulty] === mission.slug;
+          return MISSION_SLUGS[item.id] === mission.slug;
         });
 
         if (!matchingCase) return;
@@ -536,7 +539,7 @@
   }
 
   function findMissionForCase(item) {
-    const slug = MISSION_SLUGS[item.difficulty];
+    const slug = MISSION_SLUGS[item.id];
     return state.missions.find((mission) => mission.slug === slug) || null;
   }
 
