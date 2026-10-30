@@ -680,39 +680,6 @@
     </div>
   </footer>
 
-  <script src="./script.js"></script>
-
-  <script>
-    // Liga os cartões ilustrativos aos botões de casos existentes.
-    document.querySelectorAll(".case-cover").forEach((cover) => {
-      cover.addEventListener("click", () => {
-        const index = Number(cover.dataset.case);
-        const tabs = document.querySelectorAll("#tabs .tab");
-
-        if (tabs[index]) {
-          tabs[index].click();
-        }
-
-        document.querySelectorAll(".case-cover").forEach((item) => {
-          item.classList.toggle("is-active", item === cover);
-        });
-
-        document.querySelector("#case")?.scrollIntoView({
-          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-          block: "start"
-        });
-      });
-    });
-
-    document.querySelectorAll("#tabs .tab").forEach((tab, index) => {
-      tab.addEventListener("click", () => {
-        document.querySelectorAll(".case-cover").forEach((cover, coverIndex) => {
-          cover.classList.toggle("is-active", coverIndex === index);
-        });
-      });
-    });
-  </script>
-  
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./supabase.js"></script>
 <script src="./script.js"></script>
