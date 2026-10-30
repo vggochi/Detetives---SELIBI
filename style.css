@@ -704,3 +704,82 @@ body:not(.squad-ready) > footer { display: none !important; }
   .session-actions { flex-direction: column; }
   .session-actions .btn { width: 100%; }
 }
+
+/* Ajuste da barra superior do squad: mais respiro e ações alinhadas */
+.squad-session {
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: minmax(180px, 1fr) minmax(250px, auto) auto;
+  column-gap: clamp(12px, 2vw, 24px);
+  row-gap: 12px;
+  padding: 14px 16px;
+  border-radius: 4px;
+}
+.session-identity,
+.session-details,
+.session-actions {
+  min-width: 0;
+}
+.session-details {
+  justify-content: flex-start;
+  gap: 12px 20px;
+}
+.session-code,
+.session-points {
+  white-space: nowrap;
+}
+.session-actions {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.session-actions .btn {
+  min-height: 38px;
+  padding-inline: 14px;
+  white-space: nowrap;
+}
+@media (max-width: 1050px) {
+  .squad-session {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .session-details {
+    justify-content: flex-end;
+  }
+  .session-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+  }
+}
+@media (max-width: 600px) {
+  .squad-session {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 13px;
+  }
+  .session-details {
+    grid-column: 1;
+    justify-content: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+  }
+  .session-actions {
+    grid-column: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    justify-content: stretch;
+    padding-top: 10px;
+  }
+  .session-actions .btn {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 8px;
+    font-size: .72rem;
+  }
+}
+@media (max-width: 380px) {
+  .session-actions {
+    grid-template-columns: 1fr;
+  }
+}
