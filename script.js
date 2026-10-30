@@ -73,6 +73,7 @@
           description:
             "Uma página municipal apresenta relatórios de mobilidade e informa a extensão da rede em diferentes anos.",
           classification: "a",
+          acceptedClassifications: ["i"],
           explanation:
             "É uma fonte institucional potencialmente relevante. Confira a data, a metodologia e se os números realmente permitem a comparação."
         },
@@ -93,6 +94,7 @@
           description:
             "Um documento apresenta mapas e medições de ciclovias, mas é necessário verificar a data de publicação.",
           classification: "a",
+          acceptedClassifications: ["i"],
           explanation:
             "O documento pode ajudar a conferir a extensão da rede. A data e a metodologia precisam corresponder ao período alegado."
         },
@@ -131,6 +133,7 @@
           description:
             "Uma página de saúde orienta o público a verificar evidências e consultar profissionais antes de usar tratamentos.",
           classification: "a",
+          acceptedClassifications: ["i"],
           explanation:
             "Orientações institucionais ajudam a contextualizar a alegação, embora seja necessário conferir a informação específica sobre o produto."
         },
@@ -151,6 +154,7 @@
           description:
             "Um estudo científico pode informar quais resultados foram observados, em qual grupo e sob quais condições.",
           classification: "a",
+          acceptedClassifications: ["i"],
           explanation:
             "Estudos podem fornecer evidências, mas é essencial conferir o método, a qualidade e se o estudo realmente investigou a alegação."
         },
@@ -199,6 +203,7 @@
           description:
             "Uma base pública pode conter indicadores por escola e por ano, permitindo comparar os dados originais.",
           classification: "a",
+          acceptedClassifications: ["i"],
           explanation:
             "É uma fonte adequada para investigação, desde que o indicador e os períodos sejam compatíveis com a afirmação."
         },
@@ -219,6 +224,7 @@
           description:
             "Um relatório apresenta resultados de avaliação, mas ainda é necessário confirmar quais escolas e anos foram incluídos.",
           classification: "a",
+          acceptedClassifications: ["i"],
           explanation:
             "O relatório pode ajudar a testar a afirmação, desde que cubra o conjunto de escolas e o intervalo analisado."
         }
@@ -247,6 +253,7 @@
           description:
             "Uma base estatística oficial publica indicadores de trabalho por período e região.",
           classification: "a",
+          acceptedClassifications: ["i"],
           explanation:
             "A base permite conferir os valores originais, desde que sejam selecionados os períodos e os recortes corretos."
         },
@@ -277,6 +284,7 @@
           description:
             "Uma tabela pode apresentar as datas, a definição do indicador e os valores necessários para a comparação.",
           classification: "a",
+          acceptedClassifications: ["i"],
           explanation:
             "Esses dados são relevantes para testar a afirmação. Confira se a redução alegada é realmente demonstrada."
         }
@@ -315,6 +323,7 @@
           description:
             "Um registro técnico descreve instalações de energia solar e pode incluir localização e fotografias.",
           classification: "a",
+          acceptedClassifications: ["i"],
           explanation:
             "O registro pode confirmar a existência do projeto, desde que corresponda à imagem e à localização alegadas."
         },
@@ -325,6 +334,7 @@
           description:
             "Uma busca por imagens semelhantes pode localizar versões mais antigas e páginas que publicaram a fotografia.",
           classification: "a",
+          acceptedClassifications: ["i"],
           explanation:
             "A busca ajuda a rastrear a origem da imagem. Os resultados precisam ser abertos e verificados individualmente."
         },
@@ -662,16 +672,84 @@
      6. CÁLCULO DA PONTUAÇÃO
      ======================================================= */
 
+  function normalizeScoringText(value) {
+    return String(value ?? "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase("pt-BR");
+  }
+
+  function evaluateJustification(item, justification) {
+    const cleanText = justification.trim();
+    const normalized = normalizeScoringText(cleanText);
+    const words = normalized.match(/[a-z0-9]+/g) || [];
+
+    // 5 pts: readable, developed explanation (not just a short phrase).
+    const clarityScore =
+      words.length >= 12 && /[.!?;]/.test(cleanText) ? 5 : 0;
+
+    // 5 pts: explicit logical connection between the evidence and the conclusion.
+    const logicalConnectors = [
+      "porque", "pois", "portanto", "por isso", "assim", "logo",
+      "dessa forma", "com isso", "ao comparar", "isso indica",
+      "isso demonstra", "isso mostra"
+    ];
+    const coherenceScore = logicalConnectors.some((term) =>
+      normalized.includes(term)
+    ) ? 5 : 0;
+
+    // 10 pts: references to up to two distinct clues/sources (5 pts each).
+    const referencedClues = item.clues.filter((clue) => {
+      const title = normalizeScoringText(clue.title);
+      const source = normalizeScoringText(clue.source);
+      const titleWords = title.split(/\s+/).filter((word) =>
+        word.length >= 5 && !["sobre", "entre", "datas"].includes(word)
+      );
+      const matchingTitleWords = titleWords.filter((word) =>
+        normalized.includes(word)
+      ).length;
+
+      return normalized.includes(title) ||
+        normalized.includes(source) ||
+        matchingTitleWords >= 2;
+    });
+    const evidenceScore = Math.min(10, referencedClues.length * 5);
+
+    // 5 pts: the participant explicitly links the evidence to their verdict.
+    const conclusionMarkers = [
+      "meu veredito", "minha conclusao", "concluo que",
+      "a afirmacao e", "a afirmacao nao", "considero verdadeira",
+      "considero falsa", "considero inconclusiva",
+      "nao e possivel confirmar", "e verdadeira", "e falsa",
+      "e inconclusiva"
+    ];
+    const conclusionScore = conclusionMarkers.some((term) =>
+      normalized.includes(term)
+    ) ? 5 : 0;
+
+    return {
+      total: clarityScore + coherenceScore + evidenceScore + conclusionScore,
+      clarityScore,
+      coherenceScore,
+      evidenceScore,
+      conclusionScore,
+      referencedClues: referencedClues.map((clue) => clue.title)
+    };
+  }
+
   function calculateScore(item, answers, verdict, justification) {
-    let exactClassifications = 0;
+    let acceptedClassifications = 0;
     let discardedCorrectly = 0;
-    let supportedClues = 0;
 
     item.clues.forEach((clue, index) => {
       const answer = answers[index];
+      const accepted = [
+        clue.classification,
+        ...(clue.acceptedClassifications || [])
+      ];
 
-      if (answer === clue.classification) {
-        exactClassifications++;
+      if (accepted.includes(answer)) {
+        acceptedClassifications++;
       }
 
       if (
@@ -680,34 +758,24 @@
       ) {
         discardedCorrectly++;
       }
-
-      if (
-        answer === "a" &&
-        (clue.classification === "a" || clue.classification === "i")
-      ) {
-        supportedClues++;
-      }
     });
 
     const totalClues = item.clues.length;
     const classificationScore = Math.round(
-      (exactClassifications / totalClues) * 35
+      (acceptedClassifications / totalClues) * 35
     );
-
     const discardScore = Math.round(
       (discardedCorrectly / totalClues) * 15
     );
-
     const verdictScore = verdict === item.verdict ? 25 : 0;
 
     const cleanText = justification.trim();
-    const lengthScore = Math.min(15, Math.round((cleanText.length / 100) * 15));
-    const evidenceScore = supportedClues > 0 ? 10 : 0;
-    const clarityScore = Math.min(25, lengthScore + evidenceScore);
+    const justificationBreakdown = evaluateJustification(item, cleanText);
+    const justificationScore = justificationBreakdown.total;
 
     const total = Math.min(
       100,
-      classificationScore + discardScore + verdictScore + clarityScore
+      classificationScore + discardScore + verdictScore + justificationScore
     );
 
     return {
@@ -715,8 +783,14 @@
       classificationScore,
       discardScore,
       verdictScore,
-      clarityScore,
-      exactClassifications,
+      justificationScore,
+      clarityScore: justificationBreakdown.clarityScore,
+      coherenceScore: justificationBreakdown.coherenceScore,
+      evidenceScore: justificationBreakdown.evidenceScore,
+      conclusionScore: justificationBreakdown.conclusionScore,
+      referencedClues: justificationBreakdown.referencedClues,
+      acceptedClassifications,
+      exactClassifications: acceptedClassifications,
       totalClues,
       correct: verdict === item.verdict,
       verdict,
@@ -1143,13 +1217,17 @@
 
     const feedback = item.clues.map((clue, index) => {
       const answer = state.answers[index] || "";
-      const correct = answer === clue.classification;
+      const accepted = [clue.classification, ...(clue.acceptedClassifications || [])];
+      const correct = accepted.includes(answer);
 
       return `
         <li class="${correct ? "ok" : "warn"}">
           <b>${correct ? "✓" : "!"}</b>
           <span>
             <strong>${esc(clue.title)} — ${esc(CLASSIFICATIONS[answer] || "Sem classificação")}</strong><br>
+            ${correct && answer !== clue.classification
+              ? "Interpretação alternativa aceita. "
+              : ""}
             ${esc(clue.explanation)}
           </span>
         </li>
@@ -1185,7 +1263,11 @@
           <li>Classificações: ${result.classificationScore}/35</li>
           <li>Descarte de pistas: ${result.discardScore}/15</li>
           <li>Veredito: ${result.verdictScore}/25</li>
-          <li>Justificativa: ${result.clarityScore}/25</li>
+          <li>Clareza: ${result.clarityScore}/5</li>
+          <li>Coerência: ${result.coherenceScore}/5</li>
+          <li>Uso das evidências: ${result.evidenceScore}/10</li>
+          <li>Relação com o veredito: ${result.conclusionScore}/5</li>
+          <li><strong>Justificativa total: ${result.justificationScore}/25</strong></li>
         </ul>
 
         <h4>Revisão das pistas</h4>
@@ -1690,8 +1772,8 @@
       showGateMessage("Informe um nome de squad (2–50 caracteres) e uma turma (1–30 caracteres).", true);
       return;
     }
-    if (!participantes.length || participantes.some((name) => name.length < 2 || name.length > 50)) {
-      showGateMessage("Informe pelo menos um participante, com nome entre 2 e 50 caracteres.", true);
+    if (!participantes.length || participantes.some((name) => name.length < 2 || name.length > 200)) {
+      showGateMessage("Informe pelo menos um participante, com nome entre 2 e 200 caracteres.", true);
       return;
     }
 
@@ -1727,7 +1809,7 @@
     const code = $("#join-squad-code", form)?.value.trim().toUpperCase() || "";
     const participant = $("#join-squad-member", form)?.value.trim() || "";
 
-    if (code.length < 6 || participant.length < 2 || participant.length > 50) {
+    if (code.length < 6 || participant.length < 2 || participant.length > 200) {
       showGateMessage("Informe um código válido e um nome de participante entre 2 e 50 caracteres.", true);
       return;
     }
