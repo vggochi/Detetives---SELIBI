@@ -15,14 +15,14 @@
   let currentSquad = null;
   let currentParticipant = "";
 
-  const supabaseClient =
+  let supabaseClient =
     typeof window.supabaseClient?.from === "function"
       ? window.supabaseClient
       : typeof window.supabase?.from === "function"
         ? window.supabase
         : null;
 
-  const SUPABASE_CONFIGURED = Boolean(supabaseClient);
+  const SUPABASE_CONFIGURED = () => Boolean(supabaseClient);
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) =>
@@ -1805,8 +1805,18 @@
     installSquadEvents();
     addTilt();
 
-    if (!supabaseClient) {
-      showGateMessage("Não foi possível conectar ao Supabase. Confira a configuração em supabase.js.", true);
+    try {
+      if (window.supabaseReady) {
+        supabaseClient = await window.supabaseReady;
+      } else if (!supabaseClient && window.supabaseClient?.from) {
+        supabaseClient = window.supabaseClient;
+      }
+    } catch (error) {
+      console.error("Falha no carregamento do Supabase:", error);
+    }
+
+    if (!supabaseClient || typeof supabaseClient.from !== "function") {
+      showGateMessage("Não foi possível carregar o Supabase. Verifique sua conexão e tente atualizar a página.", true);
       return;
     }
 
