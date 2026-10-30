@@ -673,7 +673,10 @@
                 </tr>
               </tbody>
             </table>
-            <p class="note">Este placar é demonstrativo e pode ser conectado a um sistema de pontuação persistente.</p>
+            <div class="rank-footer">
+              <p class="note" id="ranking-status" role="status" aria-live="polite">Carregando placar do Supabase...</p>
+              <button class="btn rank-refresh" id="refresh-ranking" type="button">Atualizar placar</button>
+            </div>
           </div>
 
           <div class="medals">
