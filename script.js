@@ -35,6 +35,9 @@
   const supabaseClient = SUPABASE_CONFIGURED ? window.supabase : null;
 
   const STORAGE_KEY_PREFIX = "detetives-progresso-v2-";
+  const getStorageKey = () =>
+    STORAGE_KEY_PREFIX + currentSquad.id + "-" +
+    encodeURIComponent(currentParticipant.toLocaleLowerCase("pt-BR"));
 
   /* =======================================================
      2. CASOS EDUCACIONAIS
@@ -390,7 +393,7 @@
   function loadLocalProgress() {
     try {
       if (!currentSquad) return;
-      const raw = localStorage.getItem(STORAGE_KEY_PREFIX + currentSquad.id);
+      const raw = localStorage.getItem(getStorageKey());
       if (!raw) return;
 
       const saved = JSON.parse(raw);
@@ -410,7 +413,7 @@
   function saveLocalProgress() {
     try {
       localStorage.setItem(
-        STORAGE_KEY_PREFIX + currentSquad.id,
+        getStorageKey(),
         JSON.stringify({
           results: state.results,
           completed: [...state.completed]
@@ -744,7 +747,7 @@
         <span>Progresso da investigação</span>
         <strong>${completed}/${CASES.length} casos concluídos</strong>
         <span>·</span>
-        <strong>${points} pontos locais</strong>
+        <strong>${points} pontos do squad</strong>
         <div class="bar-track" role="progressbar"
           aria-label="Progresso dos casos"
           aria-valuemin="0"
