@@ -570,6 +570,21 @@
     }
 
     if (existingResult.data?.length) {
+      const previousRecord = state.remoteRecords.find((record) =>
+        record.missao_id === mission.id &&
+        record.nome_jogador === currentParticipant
+      );
+
+      if (previousRecord) {
+        state.results[item.id] = {
+          total: Number(previousRecord.pontos_obtidos) || 0,
+          verdict: previousRecord.resposta || "",
+          correct: Boolean(previousRecord.correta),
+          persisted: true
+        };
+        saveLocalProgress();
+      }
+
       return {
         saved: false,
         message: "Este participante já concluiu este caso. O resultado anterior foi mantido para evitar pontuação duplicada."
@@ -601,6 +616,15 @@
       if (error) throw error;
 
       state.remoteRecords.push(data);
+
+      const rankingRow = state.rankingRows.find(
+        (row) => row.id === currentSquad.id
+      );
+      if (rankingRow) {
+        rankingRow.pontos += Number(data.pontos_obtidos) || 0;
+        rankingRow.missoes.add(data.missao_id);
+        rankingRow.concluidas = rankingRow.missoes.size;
+      }
 
       return {
         saved: true,
@@ -1293,8 +1317,8 @@
         <span class="chip">Arquivo encerrado</span>
         <h3>Relatório do squad ${esc(currentSquad?.nome || "")}</h3>
         <p>
-          Você concluiu ${completed} de ${CASES.length} casos e acumulou
-          ${points} pontos nos resultados disponíveis neste navegador.
+          O squad concluiu ${completed} de ${CASES.length} casos e acumulou
+          ${points} pontos registrados no Supabase.
         </p>
 
         <div class="total">
