@@ -471,39 +471,21 @@
     if (status) status.textContent = "Sincronizando pontuações com o Supabase...";
 
     try {
-      const [squads, records] = await Promise.all([
-        fetchAllPages(() =>
-          supabaseClient.from("squads").select("id, nome, turma")
-        ),
-        fetchAllPages(() =>
-          supabaseClient
-            .from("investigacoes")
-            .select("squad_id, missao_id, pontos_obtidos, concluida")
-            .eq("concluida", true)
-        )
-      ]);
+      const { data: rankingData, error: rankingError } = await supabaseClient
+        .from("ranking_squads")
+        .select("squad_id, nome, turma, pontos, missoes_concluidas, atualizado_em")
+        .order("pontos", { ascending: false })
+        .order("nome", { ascending: true });
 
-      const rankingMap = new Map();
-      squads.forEach((squad) => {
-        rankingMap.set(squad.id, {
-          id: squad.id,
-          nome: squad.nome,
-          turma: squad.turma,
-          pontos: 0,
-          missoes: new Set()
-        });
-      });
+      if (rankingError) throw rankingError;
 
-      records.forEach((record) => {
-        const row = rankingMap.get(record.squad_id);
-        if (!row) return;
-        row.pontos += Number(record.pontos_obtidos) || 0;
-        if (record.missao_id) row.missoes.add(record.missao_id);
-      });
-
-      state.rankingRows = [...rankingMap.values()]
-        .map((row) => ({ ...row, concluidas: row.missoes.size }))
-        .sort((a, b) => b.pontos - a.pontos || a.nome.localeCompare(b.nome));
+      state.rankingRows = (rankingData || []).map((row) => ({
+        id: row.squad_id,
+        nome: row.nome,
+        turma: row.turma,
+        pontos: Number(row.pontos) || 0,
+        concluidas: Number(row.missoes_concluidas) || 0
+      }));
 
       if (status) {
         const now = new Date();
@@ -698,9 +680,16 @@
 
     try {
       const { data, error } = await supabaseClient
-        .from("investigacoes")
-        .insert(payload)
-        .select("id, squad_id, missao_id, nome_jogador, resposta, correta, pontos_obtidos, concluida, concluida_em")
+        .rpc("registrar_investigacao", {
+          p_squad_id: payload.squad_id,
+          p_missao_id: payload.missao_id,
+          p_nome_jogador: payload.nome_jogador,
+          p_resposta: payload.resposta,
+          p_correta: payload.correta,
+          p_pontos: payload.pontos_obtidos,
+          p_concluida: payload.concluida,
+          p_concluida_em: payload.concluida_em
+        })
         .single();
 
       if (error) throw error;
