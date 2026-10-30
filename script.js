@@ -1167,7 +1167,7 @@
               required
               placeholder="Explique quais evidências sustentam sua conclusão e quais limitações você encontrou."
             >${esc(state.justification)}</textarea>
-            <span class="hint">Escreva pelo menos 20 caracteres e cite as pistas que foram importantes para sua análise.</span>
+            <span class="hint">Para pontuar melhor: escreva uma explicação desenvolvida, use conectivos (como “porque” ou “portanto”), cite até duas pistas pelo nome ou origem e relacione as evidências ao seu veredito. A avaliação é automática por esses sinais de texto; ela não substitui uma análise humana do significado.</span>
           </div>
 
           <p id="form-error" class="hint" role="alert"></p>
