@@ -563,7 +563,7 @@
 
     const existingResult = await supabaseClient
       .from("investigacoes")
-      .select("id")
+      .select("id, squad_id, missao_id, nome_jogador, pontos_obtidos, resposta, correta, concluida")
       .eq("squad_id", currentSquad.id)
       .eq("missao_id", mission.id)
       .eq("nome_jogador", currentParticipant)
@@ -571,31 +571,32 @@
       .limit(1);
 
     if (existingResult.error) {
+      console.error("Falha ao consultar investigação existente:", existingResult.error);
       return {
         saved: false,
-        message: "Não foi possível verificar se este participante já concluiu a missão."
+        message: `Não foi possível consultar seu histórico: ${existingResult.error.message}`
       };
     }
 
     if (existingResult.data?.length) {
-      const previousRecord = state.remoteRecords.find((record) =>
-        record.missao_id === mission.id &&
-        record.nome_jogador === currentParticipant
-      );
+      const previousRecord = existingResult.data[0];
+      const alreadyLoaded = state.remoteRecords.some((record) => record.id === previousRecord.id);
 
-      if (previousRecord) {
-        state.results[item.id] = {
-          total: Number(previousRecord.pontos_obtidos) || 0,
-          verdict: previousRecord.resposta || "",
-          correct: Boolean(previousRecord.correta),
-          persisted: true
-        };
-        saveLocalProgress();
-      }
+      if (!alreadyLoaded) state.remoteRecords.push(previousRecord);
+
+      state.results[item.id] = {
+        total: Number(previousRecord.pontos_obtidos) || 0,
+        verdict: previousRecord.resposta || "",
+        correct: Boolean(previousRecord.correta),
+        persisted: true
+      };
+      state.completed.add(item.id);
+      saveLocalProgress();
+      renderGrand();
 
       return {
-        saved: false,
-        message: "Este participante já concluiu este caso. O resultado anterior foi mantido para evitar pontuação duplicada."
+        saved: true,
+        message: `Resultado anterior recuperado: ${Number(previousRecord.pontos_obtidos) || 0} pontos. A pontuação não foi duplicada.`
       };
     }
 
@@ -618,10 +619,17 @@
       const { data, error } = await supabaseClient
         .from("investigacoes")
         .insert(payload)
-        .select()
+        .select("id, squad_id, missao_id, nome_jogador, resposta, correta, pontos_obtidos, concluida, concluida_em")
         .single();
 
       if (error) throw error;
+
+      // Marca como persistido antes de atualizar a tela para não somar
+      // o resultado local e o registro do banco duas vezes.
+      if (state.results[item.id]) {
+        state.results[item.id].total = Number(data.pontos_obtidos) || 0;
+        state.results[item.id].persisted = true;
+      }
 
       state.remoteRecords.push(data);
 
@@ -634,17 +642,20 @@
         rankingRow.concluidas = rankingRow.missoes.size;
       }
 
+      saveLocalProgress();
+      renderGrand();
+
       return {
         saved: true,
-        message: "Investigação salva no Supabase."
+        message: `Pontuação atualizada: ${Number(data.pontos_obtidos) || 0} pontos salvos no Supabase.`
       };
     } catch (error) {
       console.error("Erro ao salvar investigação:", error);
+      state.error = error?.message || "Erro desconhecido ao salvar no Supabase.";
 
       return {
         saved: false,
-        message:
-          "Não foi possível salvar no Supabase. Confira a conexão, as permissões RLS e o console do navegador."
+        message: `Não foi possível salvar a pontuação: ${state.error}`
       };
     } finally {
       state.saving = false;
@@ -1298,12 +1309,16 @@
       state.justification
     );
 
-    state.results[item.id] = result;
+    state.results[item.id] = { ...result, persisted: false };
     state.completed.add(item.id);
     saveLocalProgress();
 
+    // Atualiza os indicadores imediatamente, antes mesmo da resposta do banco.
+    renderGrand();
+    renderTabs();
+
     // Mostra o resultado imediatamente; o banco é salvo em seguida.
-    await renderResult(result, "Salvando resultado…");
+    await renderResult(result, "Calculando e salvando pontuação…");
 
     const saveStatus = await saveInvestigation(item, result);
 
