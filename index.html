@@ -9,7 +9,7 @@
 
   <title>Detetives da Informação</title>
   <link rel="icon" type="image/png" href="./logo.png">
-  <link rel="stylesheet" href="./style.css?v=20261030-9">
+  <link rel="stylesheet" href="./style.css?v=20261030-10">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -254,7 +254,6 @@
         <a href="#como-funciona">Como funciona</a>
         <a href="#recursos">Recursos</a>
         <a href="#casos">Casos</a>
-        <a href="#ranking">Ranking</a>
       </nav>
 
       <div class="squad-session" id="squad-session" hidden>
@@ -651,70 +650,6 @@
       </div>
     </section>
 
-    <section class="sec alt" id="ranking">
-      <div class="wrap">
-        <div class="sec-head">
-          <span class="label">05 / Placar</span>
-          <h2>Ranking dos detetives</h2>
-          <p class="sub">O desempenho deve refletir a qualidade da investigação, não apenas a velocidade.</p>
-        </div>
-
-        <div class="rank-grid">
-          <div class="tablewrap">
-            <table class="rank">
-              <thead>
-                <tr><th>Pos.</th><th>Squad</th><th>Pontos</th><th>Casos</th></tr>
-              </thead>
-              <tbody id="rank-body">
-                <tr class="first">
-                  <td class="pos">01</td>
-                  <td class="nm">Investigador iniciante</td>
-                  <td class="pts"><span id="ranking-score">0 pts</span><i style="--w:0%"></i></td>
-                </tr>
-              </tbody>
-            </table>
-            <div class="rank-footer">
-              <p class="note" id="ranking-status" role="status" aria-live="polite">Carregando placar do Supabase...</p>
-              <button class="btn rank-refresh" id="refresh-ranking" type="button">Atualizar placar</button>
-            </div>
-          </div>
-
-          <div class="medals">
-            <article class="medal">
-              <svg viewBox="0 0 64 76" role="img" aria-label="Medalha de ouro">
-                <path class="m-rib1" d="M13 3h17l8 34H21z"/>
-                <path class="m-rib2" d="M34 3h17L42 37H26z"/>
-                <circle class="m-gold" cx="32" cy="47" r="20"/>
-                <circle class="m-ring" cx="32" cy="47" r="15"/>
-                <path class="m-glyph" d="M32 34l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1z"/>
-              </svg>
-              <div><h3>Ouro</h3><p>Investigações consistentes, com atenção às evidências.</p></div>
-            </article>
-            <article class="medal">
-              <svg viewBox="0 0 64 76" role="img" aria-label="Medalha de prata">
-                <path class="m-rib1" d="M13 3h17l8 34H21z"/>
-                <path class="m-rib2" d="M34 3h17L42 37H26z"/>
-                <circle cx="32" cy="47" r="20" fill="#B7C4C9"/>
-                <circle class="m-ring" cx="32" cy="47" r="15"/>
-                <path class="m-glyph" d="M32 34l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1z"/>
-              </svg>
-              <div><h3>Prata</h3><p>Boas análises com espaço para aprofundar as fontes.</p></div>
-            </article>
-            <article class="medal">
-              <svg viewBox="0 0 64 76" role="img" aria-label="Medalha de bronze">
-                <path class="m-rib1" d="M13 3h17l8 34H21z"/>
-                <path class="m-rib2" d="M34 3h17L42 37H26z"/>
-                <circle cx="32" cy="47" r="20" fill="#C88B62"/>
-                <circle class="m-ring" cx="32" cy="47" r="15"/>
-                <path class="m-glyph" d="M32 34l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1z"/>
-              </svg>
-              <div><h3>Bronze</h3><p>O primeiro passo para desenvolver o olhar investigativo.</p></div>
-            </article>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <section class="band" id="diferencial">
       <div class="wrap band-grid">
         <div>
@@ -767,6 +702,6 @@
   </footer>
 
 <script type="module" src="./supabase.js?v=20261030-6"></script>
-<script type="module" src="./script.js?v=20261030-11"></script>
+<script type="module" src="./script.js?v=20261030-12"></script>
 </body>
 </html>
