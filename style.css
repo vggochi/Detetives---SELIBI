@@ -613,3 +613,94 @@ body:not(.squad-ready) > footer { display: none !important; }
   .squad-session > span:first-child { width: 100%; }
   .session-code { width: 100%; }
 }
+
+
+/* Barra do squad: identidade, convite, placar e ações organizados */
+.bar {
+  flex-wrap: wrap;
+  padding-block: 10px;
+}
+.squad-session {
+  order: 5;
+  flex: 1 0 100%;
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.squad-session[hidden] { display: none !important; }
+.session-identity {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.session-identity strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 800 .9rem/1.1 var(--font-mono);
+  text-transform: uppercase;
+}
+.session-identity small {
+  color: var(--ink-soft);
+  font-size: .76rem;
+}
+.session-details {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.session-code, .session-points {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-soft);
+  font: 600 .65rem/1.2 var(--font-mono);
+  letter-spacing: .05em;
+}
+.session-code b { color: var(--accent); }
+.session-points b {
+  color: var(--teal);
+  font-size: .82rem;
+}
+.session-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+#leave-squad {
+  border-color: rgba(192,57,43,.45);
+  color: var(--accent);
+}
+#leave-squad:hover {
+  background: var(--accent);
+  color: #fff;
+}
+@media (max-width: 720px) {
+  .bar { gap: 10px; }
+  .squad-session {
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 10px;
+  }
+  .session-details {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    gap: 14px;
+  }
+  .session-actions {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+  .session-actions .btn { flex: 1; }
+}
+@media (max-width: 420px) {
+  .session-details { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .session-actions { flex-direction: column; }
+  .session-actions .btn { width: 100%; }
+}
